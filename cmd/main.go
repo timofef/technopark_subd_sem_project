@@ -1,20 +1,36 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"github.com/jackc/pgx"
-	"github.com/jackc/pgx/pgxpool"
-	_ "github.com/lib/pq"
 )
 
 func main() {
-	db, err := pgxpool.Conn(pgx.ConnPoolConfig{
-		ConnConfig: pgx.ConnConfig{
-			User:     "admin",
+	dbConn := pgx.Conn{
+		User:                 "farcoad",
+		Database:             "forum",
+		Password:             "postgres",
+		PreferSimpleProtocol: false,
+	}
+	db, err := pgxpool.ConnectConfig(context.Background(),
+	{  User: "admin",
 			Password: "postgres",
-			Port:     5432,
-			Database: "forum",
-		},
-		MaxConnections: 50,
+		Port:     5432,
+		Database: "forum",
+
 	})
-	pgxpool
+	if err != nil {
+		fmt.Print(err)
+	}
+
+
+	dbConf := pgx.ConnConfig{
+		User:                 "farcoad",
+		Database:             "forum",
+		Password:             "postgres",
+		PreferSimpleProtocol: false,
+	}
+
+	pgx.
 }
