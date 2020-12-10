@@ -1,36 +1,23 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"github.com/jackc/pgx"
+	"github.com/buaazp/fasthttprouter"
 )
 
 func main() {
-	dbConn := pgx.Conn{
-		User:                 "farcoad",
-		Database:             "forum",
-		Password:             "postgres",
-		PreferSimpleProtocol: false,
-	}
-	db, err := pgxpool.ConnectConfig(context.Background(),
-	{  User: "admin",
-			Password: "postgres",
-		Port:     5432,
-		Database: "forum",
-
+	pool, err := pgx.NewConnPool(pgx.ConnPoolConfig{
+		ConnConfig: pgx.ConnConfig{
+			User:     "docker",
+			Password: "docker",
+			Port:     5432,
+			Database: "docker",
+		},
+		MaxConnections: 50,
 	})
-	if err != nil {
-		fmt.Print(err)
-	}
+
+	router := fasthttprouter.New()
 
 
-	dbConf := pgx.ConnConfig{
-		User:                 "farcoad",
-		Database:             "forum",
-		Password:             "postgres",
-		PreferSimpleProtocol: false,
-	}
 
-	pgx.
 }
