@@ -4,6 +4,7 @@ import (
 	"github.com/go-openapi/strfmt"
 )
 
+//easyjson:json
 type User struct {
 	About    string       `json:"about,omitempty"`
 	Email    strfmt.Email `json:"email"`
@@ -11,4 +12,5 @@ type User struct {
 	Nickname string       `json:"nickname,omitempty"`
 }
 
-type Users []*User
+//easyjson:json
+type Users []User

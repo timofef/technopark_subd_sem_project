@@ -11,6 +11,7 @@ type Error struct {
 var (
 	UserExists      = errors.New("user already exist")
 	UserNotUpdated = errors.New("can't update user")
+	UserConflict = errors.New("user conflict")
 	ForumExists     = errors.New("forum exists")
 	ForumNotExists = errors.New("forum does not exists")
 	ThreadExist    = errors.New("thread already exists")
