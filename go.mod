@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/buaazp/fasthttprouter v0.1.1 // indirect
+	github.com/go-openapi/strfmt v0.19.11 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/valyala/fasthttp v1.18.0 // indirect
