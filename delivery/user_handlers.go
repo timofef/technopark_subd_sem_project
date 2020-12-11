@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"encoding/json"
 	"github.com/buaazp/fasthttprouter"
 	"github.com/timofef/technopark_subd_sem_project/models"
 	"github.com/timofef/technopark_subd_sem_project/usecase/interfaces"
@@ -12,14 +13,12 @@ type UserHandler struct {
 	userUsecase interfaces.UserUsecase
 }
 
-func NewUserHandler(router *fasthttprouter.Router, usecase interfaces.UserUsecase) UserHandler{
+func NewUserHandler(router *fasthttprouter.Router, usecase interfaces.UserUsecase) {
 	handler := &UserHandler{userUsecase: usecase}
 
 	router.POST("/api/user/:nickname/create", handler.CreateUser)
 	router.GET("/api/user/:nickname/profile", handler.GetUser)
 	router.POST("/api/user/:nickname/profile", handler.UpdateUser)
-
-	return *handler
 }
 
 func (h * UserHandler) CreateUser(ctx *fasthttp.RequestCtx) {
@@ -46,9 +45,44 @@ func (h * UserHandler) CreateUser(ctx *fasthttp.RequestCtx) {
 }
 
 func (h * UserHandler) GetUser(ctx *fasthttp.RequestCtx) {
+	nickname := ctx.UserValue("nickname")
 
+	user, err := h.userUsecase.GetUser(nickname.(string))
+
+	var response []byte
+	switch err {
+	case nil:
+		ctx.SetStatusCode(http.StatusOK)
+		response, _ = user.MarshalJSON()
+	case models.UserNotExists:
+		ctx.SetStatusCode(http.StatusNotFound)
+		response, _ = json.Marshal(err)
+	}
+
+	ctx.SetContentType("application/json")
+	ctx.Write(response)
 }
 
 func (h * UserHandler) UpdateUser(ctx *fasthttp.RequestCtx) {
+	var info models.UserUpdate
+	info.UnmarshalJSON(ctx.PostBody())
+	nickname := ctx.UserValue("nickname")
 
+	newProfile, err := h.userUsecase.UpdateUser(&info, nickname.(string))
+	var response []byte
+
+	switch err {
+	case nil:
+		ctx.SetStatusCode(http.StatusOK)
+		response, _ = newProfile.MarshalJSON()
+	case models.UserConflict:
+		ctx.SetStatusCode(http.StatusConflict)
+		response, _ = json.Marshal(err)
+	case models.UserNotExists:
+		ctx.SetStatusCode(http.StatusNotFound)
+		response, _ = json.Marshal(err)
+	}
+
+	ctx.SetContentType("application/json")
+	ctx.Write(response)
 }

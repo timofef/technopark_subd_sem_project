@@ -1,6 +1,8 @@
 package implementations
 
 import (
+	"database/sql"
+	"fmt"
 	"github.com/jackc/pgx"
 	"github.com/timofef/technopark_subd_sem_project/models"
 	"github.com/timofef/technopark_subd_sem_project/repository/interfaces"
@@ -43,29 +45,39 @@ func (u *UserRepo) CreateUser(user *models.User, nickname string) (models.Users,
 }
 
 func (u *UserRepo) GetUserByNickname(nickname string) (models.User, error) {
-	tx,_ := u.db.Begin()
+	tx, _ := u.db.Begin()
 
 	user := models.User{}
-	if err := tx.QueryRow("getUserProfileQuery", &nickname).
-		Scan(&user.Nickname, &user.Email, &user.About, &user.Fullname); err != nil {
+	if err := tx.QueryRow("get_user_by_nickname", &nickname).
+		Scan(&user.Email, &user.Fullname, &user.Nickname, &user.About); err != nil {
 		return models.User{}, models.UserNotExists
 	}
 
 	return user, nil
 }
 
-func (u *UserRepo) UpdateUserByNickname(newInfo *models.User, nickname string) (models.User, error) {
+func (u *UserRepo) UpdateUserByNickname(newInfo *models.UserUpdate, nickname string) (models.User, error) {
 	tx, _ := u.db.Begin()
 	defer tx.Commit()
 
-	user := models.User{}
-
-	if err := tx.QueryRow("update_user",  newInfo.Email, newInfo.Fullname, &nickname, newInfo.About).
-		Scan(&user.Nickname, &user.Email, &user.About, &user.Fullname); err != nil {
-		if _, ok := err.(pgx.PgError); ok {
+	if newInfo.Email != "" {
+		existingUser := models.User{}
+		if err := tx.QueryRow("get_user_by_email", &newInfo.Email).
+			Scan(&existingUser.Email, &existingUser.Fullname, &existingUser.Nickname, &existingUser.About); err == nil {
 			return models.User{}, models.UserConflict
 		}
-		return models.User{}, models.UserNotExists
+	}
+
+	user := models.User{}
+
+	if err := tx.QueryRow("update_user",
+		sql.NullString{String: newInfo.Email.String(), Valid: newInfo.Email != ""},
+		sql.NullString{String: newInfo.Fullname, Valid: newInfo.Fullname != ""},
+		&nickname,
+		sql.NullString{String: newInfo.About, Valid: newInfo.About != ""}).
+		Scan(&user.Email, &user.Fullname, &user.Nickname, &user.About); err != nil {
+		fmt.Println(err)
+		return models.User{}, err
 	}
 
 	return user, nil
@@ -94,9 +106,19 @@ func (u *UserRepo) PrepareStatements() error {
 
 	// GET USER BY NICKNAME
 	_, err = u.db.Prepare("get_user_by_nickname",
-		"SELECT email, fullname, nickname, about "+
-			"FROM users"+
+		"SELECT users.email, users.fullname, users.nickname, users.about "+
+			"FROM users "+
 			"WHERE nickname = $1",
+	)
+	if err != nil {
+		return err
+	}
+
+	// GET USER BY EMAIL
+	_, err = u.db.Prepare("get_user_by_email",
+		"SELECT users.email, users.fullname, users.nickname, users.about "+
+			"FROM users "+
+			"WHERE email = $1",
 	)
 	if err != nil {
 		return err
@@ -104,12 +126,12 @@ func (u *UserRepo) PrepareStatements() error {
 
 	// UPDATE EXISTING USER BY NICKNAME
 	_, err = u.db.Prepare("update_user",
-		"UPDATE users SET " +
-		"email = COALESCE($2, users.email), " +
-		"fullname = COALESCE($3, users.fullname), " +
-		"about = COALESCE($1, users.about) " +
-		"WHERE nickname = $4 " +
-		"RETURNING email, fullname, nickname, about",
+		"UPDATE users SET "+
+			"email = COALESCE($1, users.email), "+
+			"fullname = COALESCE($2, users.fullname), "+
+			"about = COALESCE($4, users.about) "+
+			"WHERE nickname = $3 "+
+			"RETURNING users.email, users.fullname, users.nickname, users.about ",
 	)
 	if err != nil {
 		return err

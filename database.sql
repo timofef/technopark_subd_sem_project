@@ -4,32 +4,35 @@ DROP TABLE IF EXISTS forum_users;
 DROP TABLE IF EXISTS votes;
 DROP TABLE IF EXISTS posts;
 DROP TABLE IF EXISTS threads;
-DROP TABLE IF EXISTS forums;
-
 
 
 DROP TABLE IF EXISTS users CASCADE;
 
 CREATE TABLE users
 (
-    id SERIAL PRIMARY KEY,
+    id       SERIAL PRIMARY KEY,
     nickname CITEXT UNIQUE NOT NULL,
     fullname CITEXT        NOT NULL,
     about    TEXT          NOT NULL,
     email    CITEXT UNIQUE NOT NULL
 );
 
-/*CREATE TABLE forums
+
+
+DROP TABLE IF EXISTS forums CASCADE;
+
+CREATE TABLE forums
 (
-    title    TEXT   NOT NULL,
-    nickname CITEXT NOT NULL,
-    posts    INT DEFAULT 0,
-    threads  INT DEFAULT 0,
-    slug     CITEXT PRIMARY KEY,
-    FOREIGN KEY (nickname) REFERENCES users (nickname)
+    id      SERIAL PRIMARY KEY,
+    title   TEXT          NOT NULL,
+    owner   CITEXT        NOT NULL,
+    posts   INT DEFAULT 0,
+    threads INT DEFAULT 0,
+    slug    CITEXT UNIQUE NOT NULL,
+    FOREIGN KEY (owner) REFERENCES users (nickname)
 );
 
-CREATE TABLE threads
+/*CREATE TABLE threads
 (
     author      CITEXT NOT NULL,
     create_date timestamptz DEFAULT now(),
@@ -82,6 +85,6 @@ CREATE TABLE forum_users
 TRUNCATE TABLE posts;
 TRUNCATE TABLE votes;
 TRUNCATE TABLE forum_users;
-TRUNCATE TABLE threads CASCADE;
-TRUNCATE TABLE forums CASCADE;*/
+TRUNCATE TABLE threads CASCADE;*/
+TRUNCATE TABLE forums CASCADE;
 TRUNCATE TABLE users CASCADE;
