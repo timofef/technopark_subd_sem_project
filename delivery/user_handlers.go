@@ -1,7 +1,6 @@
 package delivery
 
 import (
-	"encoding/json"
 	"github.com/buaazp/fasthttprouter"
 	"github.com/timofef/technopark_subd_sem_project/models"
 	"github.com/timofef/technopark_subd_sem_project/usecase/interfaces"
@@ -56,7 +55,8 @@ func (h * UserHandler) GetUser(ctx *fasthttp.RequestCtx) {
 		response, _ = user.MarshalJSON()
 	case models.UserNotExists:
 		ctx.SetStatusCode(http.StatusNotFound)
-		response, _ = json.Marshal(err)
+		msg := models.Error{Message: err.Error()}
+		response, _ = msg.MarshalJSON()
 	}
 
 	ctx.SetContentType("application/json")
@@ -77,10 +77,12 @@ func (h * UserHandler) UpdateUser(ctx *fasthttp.RequestCtx) {
 		response, _ = newProfile.MarshalJSON()
 	case models.UserConflict:
 		ctx.SetStatusCode(http.StatusConflict)
-		response, _ = json.Marshal(err)
+		msg := models.Error{Message: err.Error()}
+		response, _ = msg.MarshalJSON()
 	case models.UserNotExists:
 		ctx.SetStatusCode(http.StatusNotFound)
-		response, _ = json.Marshal(err)
+		msg := models.Error{Message: err.Error()}
+		response, _ = msg.MarshalJSON()
 	}
 
 	ctx.SetContentType("application/json")

@@ -17,7 +17,7 @@ CREATE TABLE users
     email    CITEXT UNIQUE NOT NULL
 );
 
-
+create index index_users on users (nickname, fullname, email, about);
 
 DROP TABLE IF EXISTS forums CASCADE;
 
@@ -32,20 +32,21 @@ CREATE TABLE forums
     FOREIGN KEY (owner) REFERENCES users (nickname)
 );
 
-/*CREATE TABLE threads
+CREATE TABLE threads
 (
-    author      CITEXT NOT NULL,
-    create_date timestamptz DEFAULT now(),
-    forum       CITEXT NOT NULL,
     id          SERIAL PRIMARY KEY,
-    msg         TEXT   NOT NULL,
+    author      CITEXT NOT NULL,
+    created timestamp with time zone DEFAULT now(),
+    forum       CITEXT NOT NULL,
+    message     TEXT   NOT NULL,
     slug        CITEXT UNIQUE,
     title       CITEXT NOT NULL,
-    votes       INT         DEFAULT 0,
-    FOREIGN KEY (forum) REFERENCES forums (slug),
-    FOREIGN KEY (author) REFERENCES users (nickname)
+    votes       INT                      DEFAULT 0,
+    FOREIGN KEY (forum) REFERENCES forums (slug) ON DELETE CASCADE,
+    FOREIGN KEY (author) REFERENCES users (nickname) ON DELETE CASCADE
 );
 
+/*
 CREATE TABLE posts
 (
     author      CITEXT NOT NULL,
@@ -84,7 +85,7 @@ CREATE TABLE forum_users
 
 TRUNCATE TABLE posts;
 TRUNCATE TABLE votes;
-TRUNCATE TABLE forum_users;
-TRUNCATE TABLE threads CASCADE;*/
+TRUNCATE TABLE forum_users;*/
+TRUNCATE TABLE threads CASCADE;
 TRUNCATE TABLE forums CASCADE;
 TRUNCATE TABLE users CASCADE;

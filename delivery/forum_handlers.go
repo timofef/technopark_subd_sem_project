@@ -1,7 +1,6 @@
 package delivery
 
 import (
-	"encoding/json"
 	"github.com/buaazp/fasthttprouter"
 	"github.com/timofef/technopark_subd_sem_project/models"
 	"github.com/timofef/technopark_subd_sem_project/usecase/interfaces"
@@ -16,8 +15,11 @@ type ForumHandler struct {
 func NewForumHandler(router *fasthttprouter.Router, usecase interfaces.ForumUsecase) {
 	handler := &ForumHandler{forumUsecase: usecase}
 
-	router.POST("/api/forum/create", handler.CreateForum)
-	//router.POST("/api/forum/:forum_slug/create", handler.CreateThread)
+	// Not using router.POST("/api/forum/create", handler.CreateForum)
+	// because fasthttp will have conflict in routing
+
+	router.POST("/api/forum/:slug", handler.CreateForum)
+	router.POST("/api/forum/:slug/create", handler.CreateThread)
 	router.GET("/api/forum/:slug/details", handler.GetForumDetails)
 	router.GET("/api/forum/:slug/threads", handler.GetForumThreads)
 	router.GET("/api/forum/:slug/users", handler.GetForumUsers)
@@ -40,7 +42,8 @@ func (h * ForumHandler) CreateForum(ctx *fasthttp.RequestCtx) {
 		response, _ = forum.MarshalJSON()
 	case models.UserNotExists:
 		ctx.SetStatusCode(http.StatusNotFound)
-		response, _ = json.Marshal(err)
+		msg := models.Error{Message: err.Error()}
+		response, _ = msg.MarshalJSON()
 	case models.ForumExists:
 		ctx.SetStatusCode(http.StatusConflict)
 		var existingForum models.Forum
@@ -55,15 +58,67 @@ func (h * ForumHandler) CreateForum(ctx *fasthttp.RequestCtx) {
 }
 
 func (h * ForumHandler) CreateThread(ctx *fasthttp.RequestCtx) {
+	var thread models.Thread
+	thread.UnmarshalJSON(ctx.PostBody())
+	slug := ctx.UserValue("slug")
+	thread.Forum = slug.(string)
 
+	newThread, err := h.forumUsecase.CreateThread(&thread)
+
+	var response []byte
+
+	switch err {
+	case nil:
+		ctx.SetStatusCode(http.StatusCreated)
+		response, _ = newThread.MarshalJSON()
+	case models.UserNotExists, models.ForumNotExists:
+		ctx.SetStatusCode(http.StatusNotFound)
+		msg := models.Error{Message: err.Error()}
+		response, _ = msg.MarshalJSON()
+	case models.ThreadExists:
+		ctx.SetStatusCode(http.StatusConflict)
+		response, _ = newThread.MarshalJSON()
+	}
+
+	ctx.SetContentType("application/json")
+	ctx.Write(response)
 }
 
 func (h * ForumHandler) GetForumDetails(ctx *fasthttp.RequestCtx) {
+	slug := ctx.UserValue("slug")
+	forum, err := h.forumUsecase.GetForumDetails(slug.(string))
 
+	var response []byte
+
+	switch err {
+	case nil:
+		ctx.SetStatusCode(http.StatusOK)
+		response, _ = forum.MarshalJSON()
+	case models.ForumNotExists:
+		ctx.SetStatusCode(http.StatusNotFound)
+		msg := models.Error{Message: err.Error()}
+		response, _ = msg.MarshalJSON()
+	}
+
+	ctx.SetContentType("application/json")
+	ctx.Write(response)
 }
 
 func (h * ForumHandler) GetForumThreads(ctx *fasthttp.RequestCtx) {
+	slug := ctx.UserValue("slug")
+	since := ctx.QueryArgs().Peek("since")
+	desc := ctx.QueryArgs().Peek("desc")
+	limit := ctx.QueryArgs().Peek("limit")
 
+	threads, err := h.forumUsecase.GetForumThreads(slug.(string), since, desc, limit)
+
+	var response []byte
+
+	switch err {
+	case nil:
+
+	case :
+	}
 }
 
 func (h * ForumHandler) GetForumUsers(ctx *fasthttp.RequestCtx) {

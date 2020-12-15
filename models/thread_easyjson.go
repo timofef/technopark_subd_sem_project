@@ -17,7 +17,85 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson2d00218DecodeGithubComTimofefTechnoparkSubdSemProjectModels(in *jlexer.Lexer, out *Thread) {
+func easyjson2d00218DecodeGithubComTimofefTechnoparkSubdSemProjectModels(in *jlexer.Lexer, out *Threads) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		in.Skip()
+		*out = nil
+	} else {
+		in.Delim('[')
+		if *out == nil {
+			if !in.IsDelim(']') {
+				*out = make(Threads, 0, 8)
+			} else {
+				*out = Threads{}
+			}
+		} else {
+			*out = (*out)[:0]
+		}
+		for !in.IsDelim(']') {
+			var v1 *Thread
+			if in.IsNull() {
+				in.Skip()
+				v1 = nil
+			} else {
+				if v1 == nil {
+					v1 = new(Thread)
+				}
+				(*v1).UnmarshalEasyJSON(in)
+			}
+			*out = append(*out, v1)
+			in.WantComma()
+		}
+		in.Delim(']')
+	}
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson2d00218EncodeGithubComTimofefTechnoparkSubdSemProjectModels(out *jwriter.Writer, in Threads) {
+	if in == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+		out.RawString("null")
+	} else {
+		out.RawByte('[')
+		for v2, v3 := range in {
+			if v2 > 0 {
+				out.RawByte(',')
+			}
+			if v3 == nil {
+				out.RawString("null")
+			} else {
+				(*v3).MarshalEasyJSON(out)
+			}
+		}
+		out.RawByte(']')
+	}
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v Threads) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson2d00218EncodeGithubComTimofefTechnoparkSubdSemProjectModels(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v Threads) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson2d00218EncodeGithubComTimofefTechnoparkSubdSemProjectModels(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *Threads) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson2d00218DecodeGithubComTimofefTechnoparkSubdSemProjectModels(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *Threads) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson2d00218DecodeGithubComTimofefTechnoparkSubdSemProjectModels(l, v)
+}
+func easyjson2d00218DecodeGithubComTimofefTechnoparkSubdSemProjectModels1(in *jlexer.Lexer, out *Thread) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -64,7 +142,7 @@ func easyjson2d00218DecodeGithubComTimofefTechnoparkSubdSemProjectModels(in *jle
 		in.Consumed()
 	}
 }
-func easyjson2d00218EncodeGithubComTimofefTechnoparkSubdSemProjectModels(out *jwriter.Writer, in Thread) {
+func easyjson2d00218EncodeGithubComTimofefTechnoparkSubdSemProjectModels1(out *jwriter.Writer, in Thread) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -114,23 +192,23 @@ func easyjson2d00218EncodeGithubComTimofefTechnoparkSubdSemProjectModels(out *jw
 // MarshalJSON supports json.Marshaler interface
 func (v Thread) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson2d00218EncodeGithubComTimofefTechnoparkSubdSemProjectModels(&w, v)
+	easyjson2d00218EncodeGithubComTimofefTechnoparkSubdSemProjectModels1(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Thread) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson2d00218EncodeGithubComTimofefTechnoparkSubdSemProjectModels(w, v)
+	easyjson2d00218EncodeGithubComTimofefTechnoparkSubdSemProjectModels1(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Thread) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson2d00218DecodeGithubComTimofefTechnoparkSubdSemProjectModels(&r, v)
+	easyjson2d00218DecodeGithubComTimofefTechnoparkSubdSemProjectModels1(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Thread) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson2d00218DecodeGithubComTimofefTechnoparkSubdSemProjectModels(l, v)
+	easyjson2d00218DecodeGithubComTimofefTechnoparkSubdSemProjectModels1(l, v)
 }

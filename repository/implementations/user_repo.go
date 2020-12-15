@@ -13,12 +13,24 @@ type UserRepo struct {
 }
 
 func NewUserRepo(pool *pgx.ConnPool) interfaces.UserRepository {
-	return &UserRepo{db: pool}
+	new := &UserRepo{db: pool}
+
+	if err := new.PrepareStatements(); err != nil {
+		fmt.Println(err)
+	}
+
+	return new
 }
 
-func (u *UserRepo) CreateUser(user *models.User, nickname string) (models.Users, error) {
+func (u *UserRepo) CreateUser(user *models.User, nickname string) (*models.Users, error) {
 	tx, err := u.db.Begin()
-	defer tx.Commit()
+	defer func() {
+		if err == nil {
+			_ = tx.Commit()
+		} else {
+			_ = tx.Rollback()
+		}
+	}()
 
 	result, err := tx.Exec("insert_user", user.Email, user.Fullname, &nickname, user.About)
 	if err != nil {
@@ -38,33 +50,46 @@ func (u *UserRepo) CreateUser(user *models.User, nickname string) (models.Users,
 		}
 		rows.Close()
 
-		return existingUsers, models.UserExists
+		return &existingUsers, models.UserExists
 	}
 
 	return nil, nil
 }
 
-func (u *UserRepo) GetUserByNickname(nickname string) (models.User, error) {
-	tx, _ := u.db.Begin()
+func (u *UserRepo) GetUserByNickname(nickname string) (*models.User, error) {
+	tx, err := u.db.Begin()
+	defer func() {
+		if err == nil {
+			_ = tx.Commit()
+		} else {
+			_ = tx.Rollback()
+		}
+	}()
 
 	user := models.User{}
 	if err := tx.QueryRow("get_user_by_nickname", &nickname).
 		Scan(&user.Email, &user.Fullname, &user.Nickname, &user.About); err != nil {
-		return models.User{}, models.UserNotExists
+		return nil, models.UserNotExists
 	}
 
-	return user, nil
+	return &user, nil
 }
 
-func (u *UserRepo) UpdateUserByNickname(newInfo *models.UserUpdate, nickname string) (models.User, error) {
-	tx, _ := u.db.Begin()
-	defer tx.Commit()
+func (u *UserRepo) UpdateUserByNickname(newInfo *models.UserUpdate, nickname string) (*models.User, error) {
+	tx, err := u.db.Begin()
+	defer func() {
+		if err == nil {
+			_ = tx.Commit()
+		} else {
+			_ = tx.Rollback()
+		}
+	}()
 
 	if newInfo.Email != "" {
 		existingUser := models.User{}
 		if err := tx.QueryRow("get_user_by_email", &newInfo.Email).
 			Scan(&existingUser.Email, &existingUser.Fullname, &existingUser.Nickname, &existingUser.About); err == nil {
-			return models.User{}, models.UserConflict
+			return nil, models.UserConflict
 		}
 	}
 
@@ -77,10 +102,10 @@ func (u *UserRepo) UpdateUserByNickname(newInfo *models.UserUpdate, nickname str
 		sql.NullString{String: newInfo.About, Valid: newInfo.About != ""}).
 		Scan(&user.Email, &user.Fullname, &user.Nickname, &user.About); err != nil {
 		fmt.Println(err)
-		return models.User{}, err
+		return nil, err
 	}
 
-	return user, nil
+	return &user, nil
 }
 
 func (u *UserRepo) PrepareStatements() error {

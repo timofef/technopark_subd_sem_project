@@ -28,20 +28,14 @@ func main() {
 
 	userRepo := repository.NewUserRepo(pool)
 	forumRepo := repository.NewForumRepo(pool)
-
-	if err = userRepo.PrepareStatements(); err != nil {
-		fmt.Println(err)
-	}
-	if err = forumRepo.PrepareStatements(); err != nil {
-		fmt.Println(err)
-	}
+	threadRepo := repository.NewThreadRepo(pool)
 
 	userUsecase := usecase.NewUserUsecase(userRepo)
-	forumUsecase := usecase.NewForumUsecase(forumRepo, userRepo)
+	forumUsecase := usecase.NewForumUsecase(forumRepo, userRepo, threadRepo)
 
 	handlers.NewUserHandler(router, userUsecase)
 	handlers.NewForumHandler(router, forumUsecase)
 
-	fmt.Println("http server started on 5000 port: ")
+	fmt.Println("http server started on 5000 port")
 	err = fasthttp.ListenAndServe(":5000", router.Handler)
 }
