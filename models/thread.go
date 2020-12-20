@@ -15,4 +15,4 @@ type Thread struct {
 }
 
 //easyjson:json
-type Threads []*Thread
+type Threads []Thread

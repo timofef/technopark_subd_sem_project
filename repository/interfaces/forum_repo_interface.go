@@ -6,6 +6,6 @@ type ForumRepository interface {
 	CreateForum(forum *models.Forum) (*models.Forum, error)
 	GetDetailsBySlug(slug string) (*models.Forum, error)
 	GetUsersBySlug()
-	GetTreadsBySlug()
+	GetThreads(slug string, since, desc, limit []byte) (*models.Threads, error)
 	PrepareStatements() error
 }

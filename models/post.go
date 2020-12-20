@@ -2,6 +2,7 @@ package models
 
 import "github.com/go-openapi/strfmt"
 
+//easyjson:json
 type Post struct {
 	Author   string          `json:"author"`
 	Created  strfmt.DateTime `json:"created,omitempty"`
@@ -13,4 +14,5 @@ type Post struct {
 	Thread   int32           `json:"thread,omitempty"`
 }
 
+//easyjson:json
 type Posts []*Post

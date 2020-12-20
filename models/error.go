@@ -9,7 +9,7 @@ type Error struct {
 }
 
 var (
-	UserExists      = errors.New("user already exist")
+	UserExists      = errors.New("user already exists")
 	UserNotUpdated = errors.New("can't update user")
 	UserConflict = errors.New("user conflict")
 	ForumExists     = errors.New("forum exists")
@@ -18,5 +18,7 @@ var (
 	UserNotExists   = errors.New("user does not exist")
 	ThreadNotExists = errors.New("no such thread")
 	SqlError       = errors.New("sql error")
-	PostNotExists   = errors.New("post not exist")
+	PostNotExists   = errors.New("post does not exist")
+	ParentNotExists   = errors.New("patent does not exist")
+	SameVote = errors.New("this vote already exists")
 )

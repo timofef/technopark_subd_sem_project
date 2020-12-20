@@ -44,7 +44,10 @@ func (u *UserRepo) CreateUser(user *models.User, nickname string) (*models.Users
 
 		for rows.Next() {
 			existingUser := models.User{}
-			_ = rows.Scan(&existingUser.Email, &existingUser.Fullname, &existingUser.Nickname, &existingUser.About)
+			_ = rows.Scan(&existingUser.Email,
+				&existingUser.Fullname,
+				&existingUser.Nickname,
+				&existingUser.About)
 
 			existingUsers = append(existingUsers, existingUser)
 		}

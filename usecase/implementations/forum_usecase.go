@@ -59,8 +59,18 @@ func (fu *ForumUsecase) GetForumDetails(slug string) (*models.Forum, error) {
 	return forum, err
 }
 
-func (fu *ForumUsecase) GetForumThreads(slug string, since []byte, desc []byte, limit []byte) (*models.Threads, error) {
+func (fu *ForumUsecase) GetForumThreads(slug string, since, desc, limit []byte) (*models.Threads, error) {
+	forum, err := fu.forumRepo.GetDetailsBySlug(slug)
+	if err != nil {
+		return nil, models.ForumNotExists
+	}
 
+	threads, err := fu.forumRepo.GetThreads(forum.Slug, since, desc, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return threads, nil
 }
 
 func (fu *ForumUsecase) GetForumUsers() {

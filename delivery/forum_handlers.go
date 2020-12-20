@@ -116,9 +116,16 @@ func (h * ForumHandler) GetForumThreads(ctx *fasthttp.RequestCtx) {
 
 	switch err {
 	case nil:
-
-	case :
+		ctx.SetStatusCode(http.StatusOK)
+		response, _ = threads.MarshalJSON()
+	case models.ForumNotExists:
+		ctx.SetStatusCode(http.StatusNotFound)
+		msg := models.Error{Message: err.Error()}
+		response, _ = msg.MarshalJSON()
 	}
+
+	ctx.SetContentType("application/json")
+	ctx.Write(response)
 }
 
 func (h * ForumHandler) GetForumUsers(ctx *fasthttp.RequestCtx) {
