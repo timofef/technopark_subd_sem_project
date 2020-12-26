@@ -35,8 +35,8 @@ func (u *ThreadUsecase) CreatePosts(slugOrId interface{}, posts *models.Posts) (
 	return newPosts, nil
 }
 
-func (u *ThreadUsecase) GetThread(slug_or_id interface{}) (*models.Thread, error) {
-	thread, err := u.threadRepo.GetThreadBySlugOrId(slug_or_id)
+func (u *ThreadUsecase) GetThread(slugOrId interface{}) (*models.Thread, error) {
+	thread, err := u.threadRepo.GetThreadBySlugOrId(slugOrId)
 	if err != nil {
 		return nil, err
 	}
@@ -44,12 +44,36 @@ func (u *ThreadUsecase) GetThread(slug_or_id interface{}) (*models.Thread, error
 	return thread, nil
 }
 
-func (u *ThreadUsecase) UpdateThread() {
+func (u *ThreadUsecase) UpdateThread(slug_or_id interface{}, threadUpdate *models.ThreadUpdate) (*models.Thread, error) {
+	thread, err := u.threadRepo.GetThreadBySlugOrId(slug_or_id)
+	if err != nil {
+		return nil, err
+	}
 
+	err = u.threadRepo.UpdateThreadById(thread.ID, threadUpdate)
+	if err != nil {
+		return &models.Thread{}, err
+	}
+
+	if threadUpdate.Message != "" {
+		thread.Message = threadUpdate.Message
+	}
+	if threadUpdate.Title != "" {
+		thread.Title = threadUpdate.Title
+	}
+
+	return thread, nil
 }
 
-func (u *ThreadUsecase) GetPosts() {
+func (u *ThreadUsecase) GetPosts(slugOrId interface{}, limit, since, sort, desc []byte) (*models.Posts, error) {
+	thread, err := u.threadRepo.GetThreadBySlugOrId(slugOrId)
+	if err != nil {
+		return nil, err
+	}
 
+	posts, err := u.threadRepo.GetThreadPosts(thread, limit, since, sort, desc)
+
+	return posts, nil
 }
 
 func (u *ThreadUsecase) VoteForThread(slugOrId interface{}, voice *models.Vote) (*models.Thread, error) {
@@ -57,9 +81,8 @@ func (u *ThreadUsecase) VoteForThread(slugOrId interface{}, voice *models.Vote) 
 	if err != nil {
 		return nil, models.ThreadNotExists
 	}
-	thread, _ := u.threadRepo.GetThreadBySlug(existingThread.Slug)
 
-	thread, err = u.threadRepo.VoteForThread(thread, voice)
+	thread, err := u.threadRepo.VoteForThread(existingThread, voice)
 
 	return thread, nil
 }

@@ -41,6 +41,7 @@ func (p *PostRepo) CreatePosts(posts *models.Posts, thread *models.Thread) (*mod
 	for _, post := range *posts {
 		post.Thread = thread.ID
 		post.Forum = thread.Forum
+		post.Created = creationTime
 
 		err = tx.QueryRow("insert_post",
 			post.Author,
@@ -52,6 +53,7 @@ func (p *PostRepo) CreatePosts(posts *models.Posts, thread *models.Thread) (*mod
 		).Scan(&post.ID)
 
 		if err != nil {
+			fmt.Println(err)
 			return nil, err
 		}
 	}

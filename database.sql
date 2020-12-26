@@ -57,7 +57,7 @@ CREATE TABLE threads
 
 CREATE TABLE posts
 (
-    id        SERIAL PRIMARY KEY,
+    id        BIGSERIAL PRIMARY KEY,
     author    CITEXT NOT NULL,
     created   TIMESTAMP WITH TIME ZONE DEFAULT now(),
     forum     CITEXT NOT NULL,
@@ -75,9 +75,9 @@ CREATE TABLE posts
 
 CREATE TABLE votes
 (
-    thread   INT      NOT NULL,
-    voice    INT NOT NULL,
-    nickname CITEXT   NOT NULL,
+    thread   INT    NOT NULL,
+    voice    INT    NOT NULL,
+    nickname CITEXT NOT NULL,
     FOREIGN KEY (thread) REFERENCES threads (id),
     FOREIGN KEY (nickname) REFERENCES users (nickname),
     UNIQUE (thread, nickname)
@@ -107,7 +107,6 @@ TRUNCATE TABLE users CASCADE;
 CREATE OR REPLACE FUNCTION insert_thread_votes()
     RETURNS TRIGGER AS
 $insert_thread_votes$
-DECLARE
 BEGIN
     IF new.voice > 0 THEN
         UPDATE threads SET votes = (votes + 1) WHERE id = new.thread;
@@ -118,28 +117,92 @@ BEGIN
 END;
 $insert_thread_votes$ language plpgsql;
 
-create trigger insert_thread_votes
-    before insert
-    on votes
-    for each row
-execute procedure insert_thread_votes();
+CREATE TRIGGER insert_thread_votes
+    BEFORE INSERT
+    ON votes
+    FOR EACH ROW
+EXECUTE PROCEDURE insert_thread_votes();
 
 
-create or replace function update_thread_votes()
-    returns trigger as
+CREATE OR REPLACE FUNCTION update_thread_votes()
+    RETURNS TRIGGER AS
 $update_thread_votes$
-begin
-    if new.voice > 0 then
-        update threads set votes = (votes + 2) where threads.id = new.thread;
+BEGIN
+    IF new.voice > 0 THEN
+        UPDATE threads SET votes = (votes + 2) WHERE threads.id = new.thread;
     else
-        update threads set votes = (votes - 2) where threads.id = new.thread;
-    end if;
-    return new;
-end;
-$update_thread_votes$ language plpgsql;
+        UPDATE threads SET votes = (votes - 2) WHERE threads.id = new.thread;
+    END IF;
+    RETURN new;
+END;
+$update_thread_votes$ LANGUAGE plpgsql;
 
-create trigger update_thread_votes
-    before update
-    on votes
-    for each row
-execute procedure update_thread_votes();
+CREATE TRIGGER update_thread_votes
+    BEFORE UPDATE
+    ON votes
+    FOR EACH ROW
+EXECUTE PROCEDURE update_thread_votes();
+
+
+CREATE OR REPLACE FUNCTION set_post_path()
+    RETURNS TRIGGER AS
+$set_post_path$
+DECLARE
+    parent_thread BIGINT;
+    parent_path   BIGINT[];
+BEGIN
+    IF (new.parent = 0) THEN
+        new.path := new.path || new.id;
+    ELSE
+        SELECT thread, path
+        FROM posts p
+        WHERE p.thread = new.thread
+          AND p.id = new.parent
+        INTO parent_thread , parent_path;
+        IF parent_thread != new.thread OR NOT FOUND THEN
+            RAISE EXCEPTION USING ERRCODE = '00404';
+        END IF;
+        new.path := parent_path || new.id;
+    END IF;
+    RETURN new;
+END;
+$set_post_path$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_post_path
+    BEFORE INSERT
+    ON posts
+    FOR EACH ROW
+EXECUTE PROCEDURE set_post_path();
+
+
+
+CREATE OR REPLACE FUNCTION update_forum_threads()
+    RETURNS TRIGGER AS
+$update_forum_threads$
+BEGIN
+    UPDATE forums SET threads = threads + 1 WHERE slug = new.forum;
+    RETURN new;
+END;
+$update_forum_threads$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_forum_threads
+    BEFORE INSERT
+    ON threads
+    FOR EACH ROW
+EXECUTE PROCEDURE update_forum_threads();
+
+
+CREATE OR REPLACE FUNCTION update_forum_posts()
+    RETURNS TRIGGER AS
+$update_forum_posts$
+BEGIN
+    UPDATE forums SET posts = posts + 1 WHERE slug = new.forum;
+    RETURN new;
+END;
+$update_forum_posts$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_forum_posts
+    BEFORE INSERT
+    ON posts
+    FOR EACH ROW
+EXECUTE PROCEDURE update_forum_posts();

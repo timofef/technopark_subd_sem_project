@@ -69,11 +69,50 @@ func (h * ThreadHandler) GetThread(ctx *fasthttp.RequestCtx) {
 }
 
 func (h * ThreadHandler) UpdateThread(ctx *fasthttp.RequestCtx) {
+	slug_or_id := ctx.UserValue("slug_or_id")
+	var threadUpdate models.ThreadUpdate
+	threadUpdate.UnmarshalJSON(ctx.PostBody())
+	updatedThread, err := h.threadUsecase.UpdateThread(slug_or_id, &threadUpdate)
 
+	var response []byte
+
+	switch err {
+	case nil:
+		ctx.SetStatusCode(http.StatusOK)
+		response, _ = updatedThread.MarshalJSON()
+	case models.ThreadNotExists:
+		ctx.SetStatusCode(http.StatusNotFound)
+		msg := models.Error{Message: err.Error()}
+		response, _ = msg.MarshalJSON()
+	}
+
+	ctx.SetContentType("application/json")
+	ctx.Write(response)
 }
 
 func (h * ThreadHandler) GetPosts(ctx *fasthttp.RequestCtx) {
+	slug_or_id := ctx.UserValue("slug_or_id")
+	limit := ctx.QueryArgs().Peek("limit")
+	since := ctx.QueryArgs().Peek("since")
+	sort := ctx.QueryArgs().Peek("sort")
+	desc := ctx.QueryArgs().Peek("desc")
 
+	posts, err := h.threadUsecase.GetPosts(slug_or_id, limit, since, sort, desc)
+
+	var response []byte
+
+	switch err {
+	case nil:
+		ctx.SetStatusCode(http.StatusOK)
+		response, _ = posts.MarshalJSON()
+	case models.ThreadNotExists:
+		ctx.SetStatusCode(http.StatusNotFound)
+		msg := models.Error{Message: err.Error()}
+		response, _ = msg.MarshalJSON()
+	}
+
+	ctx.SetContentType("application/json")
+	ctx.Write(response)
 }
 
 func (h * ThreadHandler) VoteForThread(ctx *fasthttp.RequestCtx) {

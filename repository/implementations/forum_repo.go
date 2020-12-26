@@ -13,13 +13,13 @@ type ForumRepo struct {
 }
 
 func NewForumRepo(pool *pgx.ConnPool) interfaces.ForumRepository {
-	new := &ForumRepo{db: pool}
+	newRepo := &ForumRepo{db: pool}
 
-	if err := new.PrepareStatements(); err != nil {
+	if err := newRepo.PrepareStatements(); err != nil {
 		fmt.Println(err)
 	}
 
-	return new
+	return newRepo
 }
 
 func (f *ForumRepo) CreateForum(forum *models.Forum) (*models.Forum, error) {
