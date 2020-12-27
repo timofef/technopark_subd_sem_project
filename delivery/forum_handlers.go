@@ -129,5 +129,25 @@ func (h * ForumHandler) GetForumThreads(ctx *fasthttp.RequestCtx) {
 }
 
 func (h * ForumHandler) GetForumUsers(ctx *fasthttp.RequestCtx) {
+	slug := ctx.UserValue("slug")
+	since := ctx.QueryArgs().Peek("since")
+	desc := ctx.QueryArgs().Peek("desc")
+	limit := ctx.QueryArgs().Peek("limit")
 
+	users, err := h.forumUsecase.GetForumUsers(slug.(string), since, desc, limit)
+
+	var response []byte
+
+	switch err {
+	case nil:
+		ctx.SetStatusCode(http.StatusOK)
+		response, _ = users.MarshalJSON()
+	case models.ForumNotExists:
+		ctx.SetStatusCode(http.StatusNotFound)
+		msg := models.Error{Message: err.Error()}
+		response, _ = msg.MarshalJSON()
+	}
+
+	ctx.SetContentType("application/json")
+	ctx.Write(response)
 }

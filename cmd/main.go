@@ -34,10 +34,12 @@ func main() {
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	forumUsecase := usecase.NewForumUsecase(forumRepo, userRepo, threadRepo)
 	threadUsecase := usecase.NewThreadUsecase(threadRepo, forumRepo, postRepo, userRepo)
+	postUsecase := usecase.NewPostUsecase(forumRepo, userRepo, threadRepo, postRepo)
 
 	handlers.NewUserHandler(router, userUsecase)
 	handlers.NewForumHandler(router, forumUsecase)
 	handlers.NewThreadHandler(router, threadUsecase)
+	handlers.NewPostHandler(router, postUsecase)
 
 	fmt.Println("http server started on 5000 port")
 

@@ -7,5 +7,5 @@ type ForumUsecase interface {
 	CreateThread(thread *models.Thread) (*models.Thread, error)
 	GetForumDetails(slug string) (*models.Forum, error)
 	GetForumThreads(slug string, since []byte, desc []byte, limit []byte) (*models.Threads, error)
-	GetForumUsers()
+	GetForumUsers(slug string, since, desc, limit []byte) (*models.Users, error)
 }

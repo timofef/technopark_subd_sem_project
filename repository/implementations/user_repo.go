@@ -49,7 +49,7 @@ func (u *UserRepo) CreateUser(user *models.User, nickname string) (*models.Users
 				&existingUser.Nickname,
 				&existingUser.About)
 
-			existingUsers = append(existingUsers, existingUser)
+			existingUsers = append(existingUsers, &existingUser)
 		}
 		rows.Close()
 

@@ -26,7 +26,7 @@ func easyjson9e1087fdDecodeGithubComTimofefTechnoparkSubdSemProjectModels(in *jl
 		in.Delim('[')
 		if *out == nil {
 			if !in.IsDelim(']') {
-				*out = make(Users, 0, 1)
+				*out = make(Users, 0, 8)
 			} else {
 				*out = Users{}
 			}
@@ -34,8 +34,16 @@ func easyjson9e1087fdDecodeGithubComTimofefTechnoparkSubdSemProjectModels(in *jl
 			*out = (*out)[:0]
 		}
 		for !in.IsDelim(']') {
-			var v1 User
-			(v1).UnmarshalEasyJSON(in)
+			var v1 *User
+			if in.IsNull() {
+				in.Skip()
+				v1 = nil
+			} else {
+				if v1 == nil {
+					v1 = new(User)
+				}
+				(*v1).UnmarshalEasyJSON(in)
+			}
 			*out = append(*out, v1)
 			in.WantComma()
 		}
@@ -54,7 +62,11 @@ func easyjson9e1087fdEncodeGithubComTimofefTechnoparkSubdSemProjectModels(out *j
 			if v2 > 0 {
 				out.RawByte(',')
 			}
-			(v3).MarshalEasyJSON(out)
+			if v3 == nil {
+				out.RawString("null")
+			} else {
+				(*v3).MarshalEasyJSON(out)
+			}
 		}
 		out.RawByte(']')
 	}

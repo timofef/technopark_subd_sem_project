@@ -80,10 +80,6 @@ func (f *ForumRepo) GetDetailsBySlug(slug string) (*models.Forum, error) {
 	return &forum, nil
 }
 
-func (f *ForumRepo) GetUsersBySlug() {
-	panic("implement me")
-}
-
 func (f *ForumRepo) GetThreads(slug string, since, desc, limit []byte) (*models.Threads, error) {
 	tx, err := f.db.Begin()
 	defer func() {
@@ -134,6 +130,52 @@ func (f *ForumRepo) GetThreads(slug string, since, desc, limit []byte) (*models.
 	return &threads, nil
 }
 
+func (f *ForumRepo) GetUsersBySlug(slug string, since, desc, limit []byte) (*models.Users, error) {
+	tx, err := f.db.Begin()
+	defer func() {
+		if err == nil {
+			_ = tx.Commit()
+		} else {
+			_ = tx.Rollback()
+		}
+	}()
+
+	var rows *pgx.Rows
+
+	if since == nil {
+		if bytes.Equal([]byte("true"), desc) {
+			rows, err = tx.Query("get_users_limit_desc", slug, limit)
+		} else {
+			rows, err = tx.Query("get_users_limit", slug, limit)
+		}
+	} else {
+		if bytes.Equal([]byte("true"), desc) {
+			rows, err = tx.Query("get_users_limit_since_desc", slug, string(since), limit)
+		} else {
+			rows, err = tx.Query("get_users_limit_since", slug, string(since), limit)
+		}
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	users := models.Users{}
+	for rows.Next() {
+		curUser := models.User{}
+		_ = rows.Scan(&curUser.Email,
+			&curUser.Fullname,
+			&curUser.Nickname,
+			&curUser.About)
+
+		users = append(users, &curUser)
+	}
+	rows.Close()
+
+	return &users, nil
+}
+
 func (f *ForumRepo) PrepareStatements() error {
 	_, err := f.db.Prepare("insert_forum",
 		"INSERT INTO forums (slug, title, owner) "+
@@ -153,6 +195,7 @@ func (f *ForumRepo) PrepareStatements() error {
 		return err
 	}
 
+	// GET THREADs
 	_, err = f.db.Prepare("get_threads_limit",
 		"SELECT id, author, created, forum, message, slug, title, votes "+
 			"FROM threads "+
@@ -191,6 +234,52 @@ func (f *ForumRepo) PrepareStatements() error {
 			"FROM threads "+
 			"WHERE forum = $1::TEXT AND created <= $2::TEXT::TIMESTAMPTZ "+
 			"ORDER BY created DESC "+
+			"LIMIT $3::TEXT::INT",
+	)
+	if err != nil {
+		return err
+	}
+
+	// GET USERS
+
+	_, err = f.db.Prepare("get_users_limit",
+		"SELECT users.email, users.fullname, users.nickname, users.about "+
+			"FROM forum_users JOIN users ON forum_users.nickname = users.nickname "+
+			"WHERE forum_users.forum = $1::TEXT "+
+			"ORDER BY users.nickname "+
+			"LIMIT $2::TEXT::INT",
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.db.Prepare("get_users_limit_desc",
+		"SELECT users.email, users.fullname, users.nickname, users.about "+
+			"FROM forum_users JOIN users ON forum_users.nickname = users.nickname "+
+			"WHERE forum_users.forum = $1::TEXT "+
+			"ORDER BY users.nickname DESC "+
+			"LIMIT $2::TEXT::INT",
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.db.Prepare("get_users_limit_since",
+		"SELECT users.email, users.fullname, users.nickname, users.about "+
+			"FROM forum_users JOIN users ON forum_users.nickname = users.nickname "+
+			"WHERE forum_users.forum = $1::TEXT AND users.nickname > $2 "+
+			"ORDER BY users.nickname "+
+			"LIMIT $3::TEXT::INT ",
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.db.Prepare("get_users_limit_since_desc",
+		"SELECT users.email, users.fullname, users.nickname, users.about "+
+			"FROM forum_users JOIN users ON forum_users.nickname = users.nickname "+
+			"WHERE forum_users.forum = $1::TEXT AND users.nickname < $2 "+
+			"ORDER BY users.nickname DESC "+
 			"LIMIT $3::TEXT::INT",
 	)
 	if err != nil {

@@ -13,4 +13,4 @@ type User struct {
 }
 
 //easyjson:json
-type Users []User
+type Users []*User
