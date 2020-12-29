@@ -247,7 +247,7 @@ func (t *ThreadRepo) GetThreadPostsFlat(thread *models.Thread, limit, since, des
 	}
 
 	if err != nil {
-		fmt.Println("getThreadPostsFlat  ", err)
+		//fmt.Println("getThreadPostsFlat  ", err)
 		return &models.Posts{}, err
 	}
 
@@ -308,7 +308,7 @@ func (t *ThreadRepo) GetThreadPostsTree(thread *models.Thread, limit, since, des
 	}
 
 	if err != nil {
-		fmt.Println("getThreadPostsTree  ", err, string(since), string(limit), string(desc))
+		//fmt.Println("getThreadPostsTree  ", err, string(since), string(limit), string(desc))
 		return &models.Posts{}, err
 	}
 
@@ -369,7 +369,7 @@ func (t *ThreadRepo) GetThreadPostsParentTree(thread *models.Thread, limit, sinc
 	}
 
 	if err != nil {
-		fmt.Println("getThreadPostsTree  ", err, string(since), string(limit), string(desc))
+		//fmt.Println("getThreadPostsTree  ", err, string(since), string(limit), string(desc))
 		return &models.Posts{}, err
 	}
 
@@ -388,7 +388,7 @@ func (t *ThreadRepo) GetThreadPostsParentTree(thread *models.Thread, limit, sinc
 			&post.Parent,
 			&post.Thread);
 			err != nil {
-			fmt.Println("getThreadPostsFlat  Scan rows  ", err)
+			//fmt.Println("getThreadPostsFlat  Scan rows  ", err)
 			return &models.Posts{}, err
 		}
 		posts = append(posts, &post)
@@ -426,7 +426,7 @@ func (t *ThreadRepo) UpdateThreadById(id int32, threadUpdate *models.ThreadUpdat
 		sql.NullString{String: threadUpdate.Title, Valid: threadUpdate.Title != ""},
 		id);
 		err != nil {
-		fmt.Println(err)
+		//fmt.Println(err)
 		return err
 	}
 

@@ -1,14 +1,31 @@
 CREATE EXTENSION IF NOT EXISTS CITEXT;
 
-DROP TABLE IF EXISTS forum_users;
-DROP TABLE IF EXISTS votes;
-DROP TABLE IF EXISTS posts;
-
-/*---------------------------------------------------------------------------------------*/
-
+DROP TABLE IF EXISTS forum_users CASCADE;
+DROP TABLE IF EXISTS votes CASCADE;
+DROP TABLE IF EXISTS posts CASCADE;
+DROP TABLE IF EXISTS threads CASCADE;
+DROP TABLE IF EXISTS forums CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
-CREATE TABLE users
+DROP FUNCTION IF EXISTS insert_thread_votes();
+DROP FUNCTION IF EXISTS update_thread_votes();
+DROP FUNCTION IF EXISTS set_post_path();
+DROP FUNCTION IF EXISTS update_forum_threads();
+DROP FUNCTION IF EXISTS update_forum_posts();
+DROP FUNCTION IF EXISTS add_forum_user();
+
+DROP TRIGGER IF EXISTS insert_thread_votes ON votes;
+DROP TRIGGER IF EXISTS update_thread_votes ON votes;
+DROP TRIGGER IF EXISTS set_post_path ON posts;
+DROP TRIGGER IF EXISTS update_forum_threads ON threads;
+DROP TRIGGER IF EXISTS update_forum_posts ON posts;
+DROP TRIGGER IF EXISTS add_forum_user_new_thread ON threads;
+DROP TRIGGER IF EXISTS add_forum_user_new_post ON posts;
+
+/*                                     TABLES                                            */
+/*---------------------------------------------------------------------------------------*/
+
+CREATE UNLOGGED TABLE users
 (
     id       SERIAL PRIMARY KEY,
     nickname CITEXT COLLATE "C" UNIQUE NOT NULL,
@@ -21,9 +38,7 @@ create index index_users on users (nickname, fullname, email, about);
 
 /*---------------------------------------------------------------------------------------*/
 
-DROP TABLE IF EXISTS forums CASCADE;
-
-CREATE TABLE forums
+CREATE UNLOGGED TABLE forums
 (
     id      SERIAL PRIMARY KEY,
     title   TEXT          NOT NULL,
@@ -34,12 +49,14 @@ CREATE TABLE forums
     FOREIGN KEY (owner) REFERENCES users (nickname)
 );
 
+create index index_forums on forums (slug, title, owner, posts, threads);
+create index index_forums_slug_hash on forums using hash (slug);
+
+create index index_forums_users_foreign on forums (owner);
 
 /*---------------------------------------------------------------------------------------*/
 
-DROP TABLE IF EXISTS threads CASCADE;
-
-CREATE TABLE threads
+CREATE UNLOGGED TABLE threads
 (
     id      SERIAL PRIMARY KEY,
     author  CITEXT COLLATE "C" NOT NULL,
@@ -53,9 +70,17 @@ CREATE TABLE threads
     FOREIGN KEY (author) REFERENCES users (nickname) ON DELETE CASCADE
 );
 
+create index index_threads on threads (slug, title, message, created, author, forum, votes);
+
+create index index_threads_slug_hash on threads using hash (slug);
+create index index_threads_id_hash on threads using hash (id);
+
+create index index_threads_forums_foreign on threads (forum);
+create index index_threads_users_foreign on threads (author);
+
 /*---------------------------------------------------------------------------------------*/
 
-CREATE TABLE posts
+CREATE UNLOGGED TABLE posts
 (
     id        BIGSERIAL PRIMARY KEY,
     author    CITEXT COLLATE "C" NOT NULL,
@@ -71,9 +96,20 @@ CREATE TABLE posts
     FOREIGN KEY (thread) REFERENCES threads (id) ON DELETE CASCADE
 );
 
+create index index_posts_thread_id on posts (thread, id);
+create index index_posts_thread_path on posts (thread, path);
+create index index_posts_thread_parent_path on posts (thread, parent);
+create index index_posts_path1_path on posts ((path[1]), path);
+
+create index index_post_thread_created_id on posts (thread, created, id);
+
+create index index_posts_forums_foreign on posts (forum);
+create index index_posts_users_foreign on posts (author);
+create index index_posts_threads_foreign on posts (thread);
+
 /*---------------------------------------------------------------------------------------*/
 
-CREATE TABLE votes
+CREATE UNLOGGED TABLE votes
 (
     thread   INT    NOT NULL,
     voice    INT    NOT NULL,
@@ -83,9 +119,11 @@ CREATE TABLE votes
     UNIQUE (thread, nickname)
 );
 
+create index index_votes_user_thread on votes (nickname, thread);
 
+/*---------------------------------------------------------------------------------------*/
 
-CREATE TABLE forum_users
+CREATE UNLOGGED TABLE forum_users
 (
     forum    CITEXT COLLATE "C" NOT NULL,
     nickname CITEXT COLLATE "C" NOT NULL,
@@ -94,16 +132,21 @@ CREATE TABLE forum_users
     UNIQUE (forum, nickname)
 );
 
+create index index_forum_users on forum_users (forum, nickname);
+cluster forum_users using index_forum_users;
 
+/*---------------------------------------------------------------------------------------*/
 
-TRUNCATE TABLE forum_users;
-TRUNCATE TABLE posts;
-TRUNCATE TABLE votes;
+TRUNCATE TABLE forum_users CASCADE;
+TRUNCATE TABLE posts CASCADE;
+TRUNCATE TABLE votes CASCADE;
 TRUNCATE TABLE threads CASCADE;
 TRUNCATE TABLE forums CASCADE;
 TRUNCATE TABLE users CASCADE;
 
 
+/*                                     TRIGGERS                                          */
+/*---------------------------------------------------------------------------------------*/
 
 CREATE OR REPLACE FUNCTION insert_thread_votes()
     RETURNS TRIGGER AS
@@ -126,6 +169,7 @@ EXECUTE PROCEDURE insert_thread_votes();
 
 
 
+
 CREATE OR REPLACE FUNCTION update_thread_votes()
     RETURNS TRIGGER AS
 $update_thread_votes$
@@ -144,6 +188,7 @@ CREATE TRIGGER update_thread_votes
     ON votes
     FOR EACH ROW
 EXECUTE PROCEDURE update_thread_votes();
+
 
 
 
@@ -179,6 +224,7 @@ EXECUTE PROCEDURE set_post_path();
 
 
 
+
 CREATE OR REPLACE FUNCTION update_forum_threads()
     RETURNS TRIGGER AS
 $update_forum_threads$
@@ -196,6 +242,7 @@ EXECUTE PROCEDURE update_forum_threads();
 
 
 
+
 CREATE OR REPLACE FUNCTION update_forum_posts()
     RETURNS TRIGGER AS
 $update_forum_posts$
@@ -210,6 +257,8 @@ CREATE TRIGGER update_forum_posts
     ON posts
     FOR EACH ROW
 EXECUTE PROCEDURE update_forum_posts();
+
+
 
 
 CREATE OR REPLACE FUNCTION add_forum_user()

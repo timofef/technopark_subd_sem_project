@@ -54,7 +54,7 @@ func (p *PostRepo) CreatePosts(posts *models.Posts, thread *models.Thread) (*mod
 		).Scan(&post.ID)
 
 		if err != nil {
-			fmt.Println(err)
+			//fmt.Println(err)
 			if err.Error() == "ERROR: 00404 (SQLSTATE 00404)" {
 				return nil, models.ParentNotExists
 			} else {
@@ -91,7 +91,7 @@ func (p *PostRepo) GetPostById(id *string) (*models.Post, error) {
 	)
 
 	if err != nil {
-		fmt.Println(err)
+		//fmt.Println(err)
 		return nil, models.PostNotExists
 	}
 
@@ -121,7 +121,7 @@ func (p *PostRepo) EditPost(id *string, update *models.PostUpdate) (*models.Post
 			&post.Message,
 			&post.Parent,
 			&post.Thread); err != nil {
-		fmt.Println(err)
+		//fmt.Println(err)
 		return nil, models.PostNotExists
 	}
 
