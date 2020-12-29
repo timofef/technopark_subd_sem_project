@@ -30,16 +30,19 @@ func main() {
 	forumRepo := repository.NewForumRepo(pool)
 	threadRepo := repository.NewThreadRepo(pool)
 	postRepo := repository.NewPostRepo(pool)
+	serviceRepo := repository.NewServiceRepo(pool)
 
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	forumUsecase := usecase.NewForumUsecase(forumRepo, userRepo, threadRepo)
 	threadUsecase := usecase.NewThreadUsecase(threadRepo, forumRepo, postRepo, userRepo)
 	postUsecase := usecase.NewPostUsecase(forumRepo, userRepo, threadRepo, postRepo)
+	serviceUsecase := usecase.NewServiceUsecase(serviceRepo)
 
 	handlers.NewUserHandler(router, userUsecase)
 	handlers.NewForumHandler(router, forumUsecase)
 	handlers.NewThreadHandler(router, threadUsecase)
 	handlers.NewPostHandler(router, postUsecase)
+	handlers.NewServiceHandler(router, serviceUsecase)
 
 	fmt.Println("http server started on 5000 port")
 

@@ -4,13 +4,14 @@ import (
 	"github.com/timofef/technopark_subd_sem_project/models"
 	repository "github.com/timofef/technopark_subd_sem_project/repository/interfaces"
 	usecase "github.com/timofef/technopark_subd_sem_project/usecase/interfaces"
+	"strings"
 )
 
 type PostUsecase struct {
-	forumRepo repository.ForumRepository
-	userRepo repository.UserRepository
+	forumRepo  repository.ForumRepository
+	userRepo   repository.UserRepository
 	threadRepo repository.ThreadRepository
-	postRepo repository.PostRepository
+	postRepo   repository.PostRepository
 }
 
 func NewPostUsecase(forumR repository.ForumRepository, userR repository.UserRepository,
@@ -20,11 +21,30 @@ func NewPostUsecase(forumR repository.ForumRepository, userR repository.UserRepo
 
 func (pu *PostUsecase) GetPostDetails(id *string, related []byte) (*models.PostFull, error) {
 	postFull := models.PostFull{}
+
 	post, err := pu.postRepo.GetPostById(id)
 	if err != nil {
 		return nil, err
 	}
 	postFull.Post = post
+
+	if related != nil {
+		relatedArgs := strings.Split(string(related), ",")
+
+		for _, value := range relatedArgs {
+			switch value {
+			case "user":
+				user, _ := pu.userRepo.GetUserByNickname(post.Author)
+				postFull.Author = user
+			case "thread":
+				thread, _ := pu.threadRepo.GetThreadById(post.Thread)
+				postFull.Thread = thread
+			case "forum":
+				forum, _ := pu.forumRepo.GetDetailsBySlug(post.Forum)
+				postFull.Forum = forum
+			}
+		}
+	}
 
 	return &postFull, nil
 }

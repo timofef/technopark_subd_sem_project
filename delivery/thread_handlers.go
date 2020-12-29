@@ -39,7 +39,7 @@ func (h * ThreadHandler) CreatePosts(ctx *fasthttp.RequestCtx) {
 		msg := models.Error{Message: err.Error()}
 		response, _ = msg.MarshalJSON()
 	case models.ParentNotExists:
-		ctx.SetStatusCode(http.StatusNotFound)
+		ctx.SetStatusCode(http.StatusConflict)
 		msg := models.Error{Message: err.Error()}
 		response, _ = msg.MarshalJSON()
 	}

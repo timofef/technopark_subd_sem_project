@@ -32,7 +32,7 @@ func (u *ThreadUsecase) CreatePosts(slugOrId interface{}, posts *models.Posts) (
 
 	newPosts, err := u.postRepo.CreatePosts(posts, thread)
 
-	return newPosts, nil
+	return newPosts, err
 }
 
 func (u *ThreadUsecase) GetThread(slugOrId interface{}) (*models.Thread, error) {
@@ -78,6 +78,11 @@ func (u *ThreadUsecase) GetPosts(slugOrId interface{}, limit, since, sort, desc 
 
 func (u *ThreadUsecase) VoteForThread(slugOrId interface{}, voice *models.Vote) (*models.Thread, error) {
 	existingThread, err := u.threadRepo.GetThreadBySlugOrId(slugOrId)
+	if err != nil {
+		return nil, models.ThreadNotExists
+	}
+
+	_, err = u.userRepo.GetUserByNickname(voice.Nickname)
 	if err != nil {
 		return nil, models.ThreadNotExists
 	}

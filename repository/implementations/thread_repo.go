@@ -81,6 +81,36 @@ func (t *ThreadRepo) GetThreadBySlug(slug string) (*models.Thread, error) {
 	return &thread, nil
 }
 
+func (t *ThreadRepo) GetThreadById(id int32) (*models.Thread, error) {
+	tx, err := t.db.Begin()
+	defer func() {
+		if err == nil {
+			_ = tx.Commit()
+		} else {
+			_ = tx.Rollback()
+		}
+	}()
+
+	rows := tx.QueryRow("get_thread_by_id", id)
+
+	var thread = models.Thread{}
+	err = rows.Scan(&thread.ID,
+		&thread.Author,
+		&thread.Created,
+		&thread.Forum,
+		&thread.Message,
+		&thread.Slug,
+		&thread.Title,
+		&thread.Votes,
+	)
+
+	if err != nil {
+		return nil, models.ThreadNotExists
+	}
+
+	return &thread, nil
+}
+
 func (t *ThreadRepo) GetThreadBySlugOrId(slugOrId interface{}) (*models.Thread, error) {
 	tx, err := t.db.Begin()
 	defer func() {

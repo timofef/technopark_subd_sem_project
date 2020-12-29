@@ -55,7 +55,12 @@ func (p *PostRepo) CreatePosts(posts *models.Posts, thread *models.Thread) (*mod
 
 		if err != nil {
 			fmt.Println(err)
-			return nil, err
+			if err.Error() == "ERROR: 00404 (SQLSTATE 00404)" {
+				return nil, models.ParentNotExists
+			} else {
+				return nil, models.ThreadNotExists
+			}
+
 		}
 	}
 
@@ -109,13 +114,13 @@ func (p *PostRepo) EditPost(id *string, update *models.PostUpdate) (*models.Post
 		sql.NullString{String: update.Message, Valid: update.Message != ""},
 		id).
 		Scan(&post.ID,
-		&post.Author,
-		&post.Created,
-		&post.Forum,
-		&post.IsEdited,
-		&post.Message,
-		&post.Parent,
-		&post.Thread); err != nil {
+			&post.Author,
+			&post.Created,
+			&post.Forum,
+			&post.IsEdited,
+			&post.Message,
+			&post.Parent,
+			&post.Thread); err != nil {
 		fmt.Println(err)
 		return nil, models.PostNotExists
 	}
@@ -134,9 +139,9 @@ func (p *PostRepo) PrepareStatements() error {
 	}
 
 	_, err = p.db.Prepare("get_post_by_id",
-		"SELECT id, author, created, forum, is_edited, message, parent, thread " +
-		"FROM posts " +
-		"WHERE id = $1 ",
+		"SELECT id, author, created, forum, is_edited, message, parent, thread "+
+			"FROM posts "+
+			"WHERE id = $1 ",
 	)
 	if err != nil {
 		return err
@@ -144,7 +149,8 @@ func (p *PostRepo) PrepareStatements() error {
 
 	_, err = p.db.Prepare("update_post",
 		"UPDATE posts SET "+
-			"message = COALESCE($1, message), is_edited = true "+
+			"message = COALESCE($1, message), "+
+			"is_edited = (CASE WHEN $1 IS NULL OR $1 = message THEN FALSE ELSE TRUE END) "+
 			"WHERE id = $2 "+
 			"RETURNING id, author, created, forum, is_edited, message, parent, thread ",
 	)
