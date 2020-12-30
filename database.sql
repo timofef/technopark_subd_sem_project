@@ -175,9 +175,11 @@ CREATE OR REPLACE FUNCTION update_thread_votes()
 $update_thread_votes$
 BEGIN
     IF new.voice > 0 THEN
-        UPDATE threads SET votes = (votes + 2) WHERE threads.id = new.thread;
+        UPDATE threads SET votes = (votes + 2)
+        WHERE threads.id = new.thread;
     else
-        UPDATE threads SET votes = (votes - 2) WHERE threads.id = new.thread;
+        UPDATE threads SET votes = (votes - 2)
+        WHERE threads.id = new.thread;
     END IF;
     RETURN new;
 END;

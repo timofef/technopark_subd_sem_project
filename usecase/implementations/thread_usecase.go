@@ -84,10 +84,10 @@ func (u *ThreadUsecase) VoteForThread(slugOrId interface{}, voice *models.Vote) 
 
 	_, err = u.userRepo.GetUserByNickname(voice.Nickname)
 	if err != nil {
-		return nil, models.ThreadNotExists
+		return nil, models.UserNotExists
 	}
 
 	thread, err := u.threadRepo.VoteForThread(existingThread, voice)
 
-	return thread, nil
+	return thread, err
 }

@@ -122,6 +122,7 @@ func (t *ThreadRepo) GetThreadBySlugOrId(slugOrId interface{}) (*models.Thread, 
 	}()
 
 	var thread = models.Thread{}
+	var slug = sql.NullString{}
 	id, err := strconv.Atoi(slugOrId.(string))
 	if err != nil {
 		if err = tx.QueryRow("get_thread_by_slug", slugOrId).
@@ -130,7 +131,7 @@ func (t *ThreadRepo) GetThreadBySlugOrId(slugOrId interface{}) (*models.Thread, 
 				&thread.Created,
 				&thread.Forum,
 				&thread.Message,
-				&thread.Slug,
+				&slug,
 				&thread.Title,
 				&thread.Votes,
 			); err != nil {
@@ -143,12 +144,15 @@ func (t *ThreadRepo) GetThreadBySlugOrId(slugOrId interface{}) (*models.Thread, 
 				&thread.Created,
 				&thread.Forum,
 				&thread.Message,
-				&thread.Slug,
+				&slug,
 				&thread.Title,
 				&thread.Votes,
 			); err != nil {
 			return nil, models.ThreadNotExists
 		}
+	}
+	if slug.Valid {
+		thread.Slug = slug.String
 	}
 
 	return &thread, nil
@@ -171,7 +175,27 @@ func (t *ThreadRepo) VoteForThread(thread *models.Thread, voice *models.Vote) (*
 		thread.ID,
 	).Scan(&alreadyVoted)
 
-	if err == nil && alreadyVoted == voice.Voice {
+	if alreadyVoted == 0 {
+		_, err = tx.Exec("insert_vote",
+			voice.Voice,
+			voice.Nickname,
+			thread.ID,
+		)
+		fmt.Println("err insert   ", err)
+		thread.Votes += voice.Voice
+	} else {
+		if alreadyVoted != voice.Voice {
+			_, err = tx.Exec("update_vote",
+				voice.Voice,
+				voice.Nickname,
+				thread.ID,
+			)
+			fmt.Println("err update   ", err)
+			thread.Votes += 2 * voice.Voice
+		}
+	}
+
+	/*if err == nil && alreadyVoted == voice.Voice {
 		return thread, models.SameVote
 	} else {
 		_, err = tx.Exec("insert_vote",
@@ -185,11 +209,12 @@ func (t *ThreadRepo) VoteForThread(thread *models.Thread, voice *models.Vote) (*
 				voice.Nickname,
 				thread.ID,
 			)
+			fmt.Println("vote   ", err)
 			thread.Votes += 2 * voice.Voice
 		} else {
 			thread.Votes += voice.Voice
 		}
-	}
+	}*/
 
 	/*if alreadyVoted != 0 {
 		if alreadyVoted == voice.Voice {
@@ -476,7 +501,7 @@ func (t *ThreadRepo) PrepareStatements() error {
 	}
 
 	_, err = t.db.Prepare("check_vote",
-		"SELECT voice FROM votes WHERE thread = $1 AND nickname = $2",
+		"SELECT voice FROM votes WHERE thread = $2 AND nickname = $1",
 	)
 	if err != nil {
 		return err

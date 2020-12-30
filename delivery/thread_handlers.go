@@ -123,11 +123,12 @@ func (h * ThreadHandler) VoteForThread(ctx *fasthttp.RequestCtx) {
 
 	var response []byte
 
+	//fmt.Println("vote   ", err)
 	switch err {
-	case nil:
+	case nil, models.SameVote:
 		ctx.SetStatusCode(http.StatusOK)
 		response, _ = thread.MarshalJSON()
-	case models.ThreadNotExists:
+	case models.ThreadNotExists, models.UserNotExists:
 		ctx.SetStatusCode(http.StatusNotFound)
 		msg := models.Error{Message: err.Error()}
 		response, _ = msg.MarshalJSON()
