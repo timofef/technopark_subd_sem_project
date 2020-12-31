@@ -24,7 +24,7 @@ func NewThreadUsecase(threadR repository.ThreadRepository,
 		userRepo:   userR}
 }
 
-func (u *ThreadUsecase) CreatePosts(slugOrId interface{}, posts *models.Posts) (*models.Posts, error) {
+func (u *ThreadUsecase) CreatePosts(slugOrId *interface{}, posts *models.Posts) (*models.Posts, error) {
 	thread, err := u.threadRepo.GetThreadBySlugOrId(slugOrId)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (u *ThreadUsecase) CreatePosts(slugOrId interface{}, posts *models.Posts) (
 	return newPosts, err
 }
 
-func (u *ThreadUsecase) GetThread(slugOrId interface{}) (*models.Thread, error) {
+func (u *ThreadUsecase) GetThread(slugOrId *interface{}) (*models.Thread, error) {
 	thread, err := u.threadRepo.GetThreadBySlugOrId(slugOrId)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (u *ThreadUsecase) GetThread(slugOrId interface{}) (*models.Thread, error) 
 	return thread, nil
 }
 
-func (u *ThreadUsecase) UpdateThread(slug_or_id interface{}, threadUpdate *models.ThreadUpdate) (*models.Thread, error) {
+func (u *ThreadUsecase) UpdateThread(slug_or_id *interface{}, threadUpdate *models.ThreadUpdate) (*models.Thread, error) {
 	thread, err := u.threadRepo.GetThreadBySlugOrId(slug_or_id)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (u *ThreadUsecase) UpdateThread(slug_or_id interface{}, threadUpdate *model
 	return thread, nil
 }
 
-func (u *ThreadUsecase) GetPosts(slugOrId interface{}, limit, since, sort, desc []byte) (*models.Posts, error) {
+func (u *ThreadUsecase) GetPosts(slugOrId *interface{}, limit, since, sort, desc []byte) (*models.Posts, error) {
 	thread, err := u.threadRepo.GetThreadBySlugOrId(slugOrId)
 	if err != nil {
 		return nil, err
@@ -76,13 +76,13 @@ func (u *ThreadUsecase) GetPosts(slugOrId interface{}, limit, since, sort, desc 
 	return posts, nil
 }
 
-func (u *ThreadUsecase) VoteForThread(slugOrId interface{}, voice *models.Vote) (*models.Thread, error) {
+func (u *ThreadUsecase) VoteForThread(slugOrId *interface{}, voice *models.Vote) (*models.Thread, error) {
 	existingThread, err := u.threadRepo.GetThreadBySlugOrId(slugOrId)
 	if err != nil {
 		return nil, models.ThreadNotExists
 	}
 
-	_, err = u.userRepo.GetUserByNickname(voice.Nickname)
+	_, err = u.userRepo.GetUserByNickname(&voice.Nickname)
 	if err != nil {
 		return nil, models.UserNotExists
 	}

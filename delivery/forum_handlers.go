@@ -85,8 +85,8 @@ func (h * ForumHandler) CreateThread(ctx *fasthttp.RequestCtx) {
 }
 
 func (h * ForumHandler) GetForumDetails(ctx *fasthttp.RequestCtx) {
-	slug := ctx.UserValue("slug")
-	forum, err := h.forumUsecase.GetForumDetails(slug.(string))
+	slug := ctx.UserValue("slug").(string)
+	forum, err := h.forumUsecase.GetForumDetails(&slug)
 
 	var response []byte
 
@@ -105,12 +105,12 @@ func (h * ForumHandler) GetForumDetails(ctx *fasthttp.RequestCtx) {
 }
 
 func (h * ForumHandler) GetForumThreads(ctx *fasthttp.RequestCtx) {
-	slug := ctx.UserValue("slug")
+	slug := ctx.UserValue("slug").(string)
 	since := ctx.QueryArgs().Peek("since")
 	desc := ctx.QueryArgs().Peek("desc")
 	limit := ctx.QueryArgs().Peek("limit")
 
-	threads, err := h.forumUsecase.GetForumThreads(slug.(string), since, desc, limit)
+	threads, err := h.forumUsecase.GetForumThreads(&slug, since, desc, limit)
 
 	var response []byte
 
@@ -129,12 +129,12 @@ func (h * ForumHandler) GetForumThreads(ctx *fasthttp.RequestCtx) {
 }
 
 func (h * ForumHandler) GetForumUsers(ctx *fasthttp.RequestCtx) {
-	slug := ctx.UserValue("slug")
+	slug := ctx.UserValue("slug").(string)
 	since := ctx.QueryArgs().Peek("since")
 	desc := ctx.QueryArgs().Peek("desc")
 	limit := ctx.QueryArgs().Peek("limit")
 
-	users, err := h.forumUsecase.GetForumUsers(slug.(string), since, desc, limit)
+	users, err := h.forumUsecase.GetForumUsers(&slug, since, desc, limit)
 
 	var response []byte
 

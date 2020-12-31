@@ -26,7 +26,7 @@ func (h * ThreadHandler) CreatePosts(ctx *fasthttp.RequestCtx) {
 	var posts models.Posts
 	posts.UnmarshalJSON(ctx.PostBody())
 	slug_or_id := ctx.UserValue("slug_or_id")
-	newPosts, err := h.threadUsecase.CreatePosts(slug_or_id, &posts)
+	newPosts, err := h.threadUsecase.CreatePosts(&slug_or_id, &posts)
 
 	var response []byte
 
@@ -50,7 +50,7 @@ func (h * ThreadHandler) CreatePosts(ctx *fasthttp.RequestCtx) {
 
 func (h * ThreadHandler) GetThread(ctx *fasthttp.RequestCtx) {
 	slug_or_id := ctx.UserValue("slug_or_id")
-	thread, err := h.threadUsecase.GetThread(slug_or_id)
+	thread, err := h.threadUsecase.GetThread(&slug_or_id)
 
 	var response []byte
 
@@ -72,7 +72,7 @@ func (h * ThreadHandler) UpdateThread(ctx *fasthttp.RequestCtx) {
 	slug_or_id := ctx.UserValue("slug_or_id")
 	var threadUpdate models.ThreadUpdate
 	threadUpdate.UnmarshalJSON(ctx.PostBody())
-	updatedThread, err := h.threadUsecase.UpdateThread(slug_or_id, &threadUpdate)
+	updatedThread, err := h.threadUsecase.UpdateThread(&slug_or_id, &threadUpdate)
 
 	var response []byte
 
@@ -97,7 +97,7 @@ func (h * ThreadHandler) GetPosts(ctx *fasthttp.RequestCtx) {
 	sort := ctx.QueryArgs().Peek("sort")
 	desc := ctx.QueryArgs().Peek("desc")
 
-	posts, err := h.threadUsecase.GetPosts(slug_or_id, limit, since, sort, desc)
+	posts, err := h.threadUsecase.GetPosts(&slug_or_id, limit, since, sort, desc)
 
 	var response []byte
 
@@ -119,7 +119,7 @@ func (h * ThreadHandler) VoteForThread(ctx *fasthttp.RequestCtx) {
 	var voice models.Vote
 	voice.UnmarshalJSON(ctx.PostBody())
 	slug_or_id := ctx.UserValue("slug_or_id")
-	thread, err := h.threadUsecase.VoteForThread(slug_or_id, &voice)
+	thread, err := h.threadUsecase.VoteForThread(&slug_or_id, &voice)
 
 	var response []byte
 

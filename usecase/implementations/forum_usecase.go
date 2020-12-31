@@ -17,7 +17,7 @@ func NewForumUsecase(forumR repository.ForumRepository, userR repository.UserRep
 }
 
 func (fu *ForumUsecase) CreateForum(forum *models.Forum) (*models.Forum, error) {
-	user, err := fu.userRepo.GetUserByNickname(forum.User)
+	user, err := fu.userRepo.GetUserByNickname(&forum.User)
 	if err != nil {
 		return nil, models.UserNotExists
 	}
@@ -28,13 +28,13 @@ func (fu *ForumUsecase) CreateForum(forum *models.Forum) (*models.Forum, error) 
 }
 
 func (fu *ForumUsecase) CreateThread(thread *models.Thread) (*models.Thread, error) {
-	author, err := fu.userRepo.GetUserByNickname(thread.Author)
+	author, err := fu.userRepo.GetUserByNickname(&thread.Author)
 	if err != nil {
 		return nil, models.UserNotExists
 	}
 	thread.Author = author.Nickname
 
-	forum, err := fu.forumRepo.GetDetailsBySlug(thread.Forum)
+	forum, err := fu.forumRepo.GetDetailsBySlug(&thread.Forum)
 	if err != nil {
 		return nil, models.ForumNotExists
 	}
@@ -53,13 +53,13 @@ func (fu *ForumUsecase) CreateThread(thread *models.Thread) (*models.Thread, err
 	return nil, nil
 }
 
-func (fu *ForumUsecase) GetForumDetails(slug string) (*models.Forum, error) {
+func (fu *ForumUsecase) GetForumDetails(slug *string) (*models.Forum, error) {
 	forum, err := fu.forumRepo.GetDetailsBySlug(slug)
 
 	return forum, err
 }
 
-func (fu *ForumUsecase) GetForumThreads(slug string, since, desc, limit []byte) (*models.Threads, error) {
+func (fu *ForumUsecase) GetForumThreads(slug *string, since, desc, limit []byte) (*models.Threads, error) {
 	forum, err := fu.forumRepo.GetDetailsBySlug(slug)
 	if err != nil {
 		return nil, models.ForumNotExists
@@ -73,7 +73,7 @@ func (fu *ForumUsecase) GetForumThreads(slug string, since, desc, limit []byte) 
 	return threads, nil
 }
 
-func (fu *ForumUsecase) GetForumUsers(slug string, since, desc, limit []byte) (*models.Users, error) {
+func (fu *ForumUsecase) GetForumUsers(slug *string, since, desc, limit []byte) (*models.Users, error) {
 	forum, err := fu.forumRepo.GetDetailsBySlug(slug)
 	if err != nil {
 		return nil, models.ForumNotExists

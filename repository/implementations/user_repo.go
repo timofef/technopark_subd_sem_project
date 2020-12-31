@@ -22,7 +22,7 @@ func NewUserRepo(pool *pgx.ConnPool) interfaces.UserRepository {
 	return new
 }
 
-func (u *UserRepo) CreateUser(user *models.User, nickname string) (*models.Users, error) {
+func (u *UserRepo) CreateUser(user *models.User, nickname *string) (*models.Users, error) {
 	tx, err := u.db.Begin()
 	defer func() {
 		if err == nil {
@@ -32,7 +32,7 @@ func (u *UserRepo) CreateUser(user *models.User, nickname string) (*models.Users
 		}
 	}()
 
-	result, err := tx.Exec("insert_user", user.Email, user.Fullname, &nickname, user.About)
+	result, err := tx.Exec("insert_user", user.Email, user.Fullname, nickname, user.About)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (u *UserRepo) CreateUser(user *models.User, nickname string) (*models.Users
 	if result.RowsAffected() == 0 {
 		existingUsers := models.Users{}
 
-		rows, _ := tx.Query("get_users_by_nickname_or_email", user.Email, &nickname)
+		rows, _ := tx.Query("get_users_by_nickname_or_email", user.Email, nickname)
 
 		for rows.Next() {
 			existingUser := models.User{}
@@ -59,7 +59,7 @@ func (u *UserRepo) CreateUser(user *models.User, nickname string) (*models.Users
 	return nil, nil
 }
 
-func (u *UserRepo) GetUserByNickname(nickname string) (*models.User, error) {
+func (u *UserRepo) GetUserByNickname(nickname *string) (*models.User, error) {
 	tx, err := u.db.Begin()
 	defer func() {
 		if err == nil {
@@ -70,7 +70,7 @@ func (u *UserRepo) GetUserByNickname(nickname string) (*models.User, error) {
 	}()
 
 	user := models.User{}
-	if err := tx.QueryRow("get_user_by_nickname", &nickname).
+	if err := tx.QueryRow("get_user_by_nickname", nickname).
 		Scan(&user.Email, &user.Fullname, &user.Nickname, &user.About); err != nil {
 		return nil, models.UserNotExists
 	}
@@ -78,7 +78,7 @@ func (u *UserRepo) GetUserByNickname(nickname string) (*models.User, error) {
 	return &user, nil
 }
 
-func (u *UserRepo) UpdateUserByNickname(newInfo *models.UserUpdate, nickname string) (*models.User, error) {
+func (u *UserRepo) UpdateUserByNickname(newInfo *models.UserUpdate, nickname *string) (*models.User, error) {
 	tx, err := u.db.Begin()
 	defer func() {
 		if err == nil {
@@ -101,7 +101,7 @@ func (u *UserRepo) UpdateUserByNickname(newInfo *models.UserUpdate, nickname str
 	if err := tx.QueryRow("update_user",
 		sql.NullString{String: newInfo.Email.String(), Valid: newInfo.Email != ""},
 		sql.NullString{String: newInfo.Fullname, Valid: newInfo.Fullname != ""},
-		&nickname,
+		nickname,
 		sql.NullString{String: newInfo.About, Valid: newInfo.About != ""}).
 		Scan(&user.Email, &user.Fullname, &user.Nickname, &user.About); err != nil {
 		fmt.Println(err)

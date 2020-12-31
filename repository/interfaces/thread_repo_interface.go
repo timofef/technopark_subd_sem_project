@@ -6,7 +6,7 @@ type ThreadRepository interface {
 	CreateThread(thread *models.Thread) (*models.Thread, error)
 	GetThreadBySlug(slug string) (*models.Thread, error)
 	GetThreadById(id int32) (*models.Thread, error)
-	GetThreadBySlugOrId(slugOrId interface{}) (*models.Thread, error)
+	GetThreadBySlugOrId(slugOrId *interface{}) (*models.Thread, error)
 	VoteForThread(thread *models.Thread, voice *models.Vote) (*models.Thread, error)
 	GetThreadPosts(thread *models.Thread, limit, since, sort , desc []byte) (*models.Posts, error)
 	GetThreadPostsFlat(thread *models.Thread, limit, since, desc []byte) (*models.Posts, error)

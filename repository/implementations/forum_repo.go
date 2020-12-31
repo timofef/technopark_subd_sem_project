@@ -55,7 +55,7 @@ func (f *ForumRepo) CreateForum(forum *models.Forum) (*models.Forum, error) {
 	return forum, nil
 }
 
-func (f *ForumRepo) GetDetailsBySlug(slug string) (*models.Forum, error) {
+func (f *ForumRepo) GetDetailsBySlug(slug *string) (*models.Forum, error) {
 	tx, err := f.db.Begin()
 	defer func() {
 		if err == nil {

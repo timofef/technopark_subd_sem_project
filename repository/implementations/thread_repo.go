@@ -116,7 +116,7 @@ func (t *ThreadRepo) GetThreadById(id int32) (*models.Thread, error) {
 	return &thread, nil
 }
 
-func (t *ThreadRepo) GetThreadBySlugOrId(slugOrId interface{}) (*models.Thread, error) {
+func (t *ThreadRepo) GetThreadBySlugOrId(slugOrId *interface{}) (*models.Thread, error) {
 	tx, err := t.db.Begin()
 	defer func() {
 		if err == nil {
@@ -128,7 +128,7 @@ func (t *ThreadRepo) GetThreadBySlugOrId(slugOrId interface{}) (*models.Thread, 
 
 	var thread = models.Thread{}
 	var slug = sql.NullString{}
-	id, err := strconv.Atoi(slugOrId.(string))
+	id, err := strconv.Atoi((*slugOrId).(string))
 	if err != nil {
 		if err = tx.QueryRow("get_thread_by_slug", slugOrId).
 			Scan(&thread.ID,

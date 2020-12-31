@@ -42,8 +42,8 @@ CLUSTER users USING index_users;
 CREATE UNLOGGED TABLE forums
 (
     id      SERIAL PRIMARY KEY,
-    title   TEXT          NOT NULL,
-    owner   CITEXT   COLLATE "C"     NOT NULL,
+    title   TEXT                      NOT NULL,
+    owner   CITEXT COLLATE "C"        NOT NULL,
     posts   INT DEFAULT 0,
     threads INT DEFAULT 0,
     slug    CITEXT COLLATE "C" UNIQUE NOT NULL,
@@ -63,7 +63,7 @@ CREATE UNLOGGED TABLE threads
     author  CITEXT COLLATE "C" NOT NULL,
     created TIMESTAMP WITH TIME ZONE DEFAULT now(),
     forum   CITEXT COLLATE "C" NOT NULL,
-    message TEXT   NOT NULL,
+    message TEXT               NOT NULL,
     slug    CITEXT COLLATE "C" UNIQUE,
     title   CITEXT COLLATE "C" NOT NULL,
     votes   INT                      DEFAULT 0,
@@ -88,9 +88,9 @@ CREATE UNLOGGED TABLE posts
     created   TIMESTAMP WITH TIME ZONE DEFAULT now(),
     forum     CITEXT COLLATE "C" NOT NULL,
     is_edited BOOLEAN                  DEFAULT FALSE,
-    message   TEXT   NOT NULL,
-    parent    INT    NOT NULL,
-    thread    INT    NOT NULL,
+    message   TEXT               NOT NULL,
+    parent    INT                NOT NULL,
+    thread    INT                NOT NULL,
     path      BIGINT[],
     FOREIGN KEY (forum) REFERENCES forums (slug) ON DELETE CASCADE,
     FOREIGN KEY (author) REFERENCES users (nickname) ON DELETE CASCADE,
@@ -112,8 +112,8 @@ create index index_posts_threads_foreign on posts (thread);
 
 CREATE UNLOGGED TABLE votes
 (
-    thread   INT    NOT NULL,
-    voice    INT    NOT NULL,
+    thread   INT                NOT NULL,
+    voice    INT                NOT NULL,
     nickname CITEXT COLLATE "C" NOT NULL,
     FOREIGN KEY (thread) REFERENCES threads (id),
     FOREIGN KEY (nickname) REFERENCES users (nickname),
@@ -170,16 +170,17 @@ EXECUTE PROCEDURE insert_thread_votes();
 
 
 
-
 CREATE OR REPLACE FUNCTION update_thread_votes()
     RETURNS TRIGGER AS
 $update_thread_votes$
 BEGIN
     IF new.voice > 0 THEN
-        UPDATE threads SET votes = (votes + 2)
+        UPDATE threads
+        SET votes = (votes + 2)
         WHERE threads.id = new.thread;
     else
-        UPDATE threads SET votes = (votes - 2)
+        UPDATE threads
+        SET votes = (votes - 2)
         WHERE threads.id = new.thread;
     END IF;
     RETURN new;
@@ -191,7 +192,6 @@ CREATE TRIGGER update_thread_votes
     ON votes
     FOR EACH ROW
 EXECUTE PROCEDURE update_thread_votes();
-
 
 
 
@@ -227,7 +227,6 @@ EXECUTE PROCEDURE set_post_path();
 
 
 
-
 CREATE OR REPLACE FUNCTION update_forum_threads()
     RETURNS TRIGGER AS
 $update_forum_threads$
@@ -242,7 +241,6 @@ CREATE TRIGGER update_forum_threads
     ON threads
     FOR EACH ROW
 EXECUTE PROCEDURE update_forum_threads();
-
 
 
 
@@ -263,12 +261,12 @@ EXECUTE PROCEDURE update_forum_posts();
 
 
 
-
 CREATE OR REPLACE FUNCTION add_forum_user()
     RETURNS TRIGGER AS
 $add_forum_user$
 BEGIN
-    INSERT INTO forum_users (nickname, forum) VALUES (new.author, new.forum)
+    INSERT INTO forum_users (nickname, forum)
+    VALUES (new.author, new.forum)
     ON CONFLICT DO NOTHING;
     RETURN new;
 END;

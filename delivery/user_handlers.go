@@ -23,9 +23,9 @@ func NewUserHandler(router *fasthttprouter.Router, usecase interfaces.UserUsecas
 func (h * UserHandler) CreateUser(ctx *fasthttp.RequestCtx) {
 	var user models.User
 	user.UnmarshalJSON(ctx.PostBody())
-	nickname := ctx.UserValue("nickname")
+	nickname := ctx.UserValue("nickname").(string)
 
-	users, err := h.userUsecase.CreateUser(&user, nickname.(string))
+	users, err := h.userUsecase.CreateUser(&user, &nickname)
 
 	var response []byte
 
@@ -44,9 +44,9 @@ func (h * UserHandler) CreateUser(ctx *fasthttp.RequestCtx) {
 }
 
 func (h * UserHandler) GetUser(ctx *fasthttp.RequestCtx) {
-	nickname := ctx.UserValue("nickname")
+	nickname := ctx.UserValue("nickname").(string)
 
-	user, err := h.userUsecase.GetUser(nickname.(string))
+	user, err := h.userUsecase.GetUser(&nickname)
 
 	var response []byte
 	switch err {
@@ -66,9 +66,9 @@ func (h * UserHandler) GetUser(ctx *fasthttp.RequestCtx) {
 func (h * UserHandler) UpdateUser(ctx *fasthttp.RequestCtx) {
 	var info models.UserUpdate
 	info.UnmarshalJSON(ctx.PostBody())
-	nickname := ctx.UserValue("nickname")
+	nickname := ctx.UserValue("nickname").(string)
 
-	newProfile, err := h.userUsecase.UpdateUser(&info, nickname.(string))
+	newProfile, err := h.userUsecase.UpdateUser(&info, &nickname)
 	var response []byte
 
 	switch err {
