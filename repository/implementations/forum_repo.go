@@ -2,6 +2,7 @@ package implementations
 
 import (
 	"bytes"
+	"database/sql"
 	"fmt"
 	"github.com/jackc/pgx"
 	"github.com/timofef/technopark_subd_sem_project/models"
@@ -114,14 +115,19 @@ func (f *ForumRepo) GetThreads(slug string, since, desc, limit []byte) (*models.
 	threads := models.Threads{}
 	for rows.Next() {
 		curThread := models.Thread{}
-		_ = rows.Scan(&curThread.ID,
+		slug := sql.NullString{}
+		err = rows.Scan(&curThread.ID,
 			&curThread.Author,
 			&curThread.Created,
 			&curThread.Forum,
 			&curThread.Message,
-			&curThread.Slug,
+			&slug,
 			&curThread.Title,
 			&curThread.Votes)
+
+		if slug.Valid {
+			curThread.Slug = slug.String
+		}
 
 		threads = append(threads, curThread)
 	}

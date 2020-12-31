@@ -34,13 +34,16 @@ func (pu *PostUsecase) GetPostDetails(id *string, related []byte) (*models.PostF
 		for _, value := range relatedArgs {
 			switch value {
 			case "user":
-				user, _ := pu.userRepo.GetUserByNickname(post.Author)
+				user, _:= pu.userRepo.GetUserByNickname(post.Author)
+				//fmt.Println("user   ", err)
 				postFull.Author = user
 			case "thread":
 				thread, _ := pu.threadRepo.GetThreadById(post.Thread)
+				//fmt.Println("thread   ", err)
 				postFull.Thread = thread
 			case "forum":
 				forum, _ := pu.forumRepo.GetDetailsBySlug(post.Forum)
+				//fmt.Println("forum   ", err)
 				postFull.Forum = forum
 			}
 		}

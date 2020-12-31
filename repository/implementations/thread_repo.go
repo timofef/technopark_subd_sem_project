@@ -94,17 +94,22 @@ func (t *ThreadRepo) GetThreadById(id int32) (*models.Thread, error) {
 	rows := tx.QueryRow("get_thread_by_id", id)
 
 	var thread = models.Thread{}
+	slug := sql.NullString{}
 	err = rows.Scan(&thread.ID,
 		&thread.Author,
 		&thread.Created,
 		&thread.Forum,
 		&thread.Message,
-		&thread.Slug,
+		&slug,
 		&thread.Title,
 		&thread.Votes,
 	)
+	if slug.Valid {
+		thread.Slug = slug.String
+	}
 
 	if err != nil {
+		//fmt.Println(err)
 		return nil, models.ThreadNotExists
 	}
 
@@ -181,7 +186,7 @@ func (t *ThreadRepo) VoteForThread(thread *models.Thread, voice *models.Vote) (*
 			voice.Nickname,
 			thread.ID,
 		)
-		fmt.Println("err insert   ", err)
+		//fmt.Println("err insert   ", err)
 		thread.Votes += voice.Voice
 	} else {
 		if alreadyVoted != voice.Voice {
@@ -190,7 +195,7 @@ func (t *ThreadRepo) VoteForThread(thread *models.Thread, voice *models.Vote) (*
 				voice.Nickname,
 				thread.ID,
 			)
-			fmt.Println("err update   ", err)
+			//fmt.Println("err update   ", err)
 			thread.Votes += 2 * voice.Voice
 		}
 	}
@@ -272,7 +277,7 @@ func (t *ThreadRepo) GetThreadPostsFlat(thread *models.Thread, limit, since, des
 	}
 
 	if err != nil {
-		//fmt.Println("getThreadPostsFlat  ", err)
+		fmt.Println("getThreadPostsFlat  ", err)
 		return &models.Posts{}, err
 	}
 
@@ -333,7 +338,7 @@ func (t *ThreadRepo) GetThreadPostsTree(thread *models.Thread, limit, since, des
 	}
 
 	if err != nil {
-		//fmt.Println("getThreadPostsTree  ", err, string(since), string(limit), string(desc))
+		fmt.Println("getThreadPostsTree  ", err, string(since), string(limit), string(desc))
 		return &models.Posts{}, err
 	}
 
@@ -352,7 +357,7 @@ func (t *ThreadRepo) GetThreadPostsTree(thread *models.Thread, limit, since, des
 			&post.Parent,
 			&post.Thread);
 			err != nil {
-			fmt.Println("getThreadPostsFlat  Scan rows  ", err)
+			fmt.Println("getThreadPostsTree  Scan rows  ", err)
 			return &models.Posts{}, err
 		}
 		posts = append(posts, &post)
@@ -394,7 +399,7 @@ func (t *ThreadRepo) GetThreadPostsParentTree(thread *models.Thread, limit, sinc
 	}
 
 	if err != nil {
-		//fmt.Println("getThreadPostsTree  ", err, string(since), string(limit), string(desc))
+		fmt.Println("getThreadPostsParentTree  ", err, string(since), string(limit), string(desc))
 		return &models.Posts{}, err
 	}
 
@@ -413,7 +418,7 @@ func (t *ThreadRepo) GetThreadPostsParentTree(thread *models.Thread, limit, sinc
 			&post.Parent,
 			&post.Thread);
 			err != nil {
-			//fmt.Println("getThreadPostsFlat  Scan rows  ", err)
+			fmt.Println("getThreadPostsParentTree  Scan rows  ", err)
 			return &models.Posts{}, err
 		}
 		posts = append(posts, &post)

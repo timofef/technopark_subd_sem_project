@@ -34,7 +34,8 @@ CREATE UNLOGGED TABLE users
     email    CITEXT UNIQUE             NOT NULL
 );
 
-create index index_users on users (nickname, fullname, email, about);
+CREATE INDEX index_users ON users (nickname, fullname, email, about);
+CLUSTER users USING index_users;
 
 /*---------------------------------------------------------------------------------------*/
 
@@ -49,10 +50,10 @@ CREATE UNLOGGED TABLE forums
     FOREIGN KEY (owner) REFERENCES users (nickname)
 );
 
-create index index_forums on forums (slug, title, owner, posts, threads);
-create index index_forums_slug_hash on forums using hash (slug);
+CREATE INDEX index_forums ON forums (slug, title, owner, posts, threads);
+CREATE INDEX index_forums_slug_hash ON forums USING hash (slug);
 
-create index index_forums_users_foreign on forums (owner);
+CREATE INDEX index_forums_users_foreign on forums (owner);
 
 /*---------------------------------------------------------------------------------------*/
 
@@ -98,7 +99,7 @@ CREATE UNLOGGED TABLE posts
 
 create index index_posts_thread_id on posts (thread, id);
 create index index_posts_thread_path on posts (thread, path);
-create index index_posts_thread_parent_path on posts (thread, parent);
+create index index_posts_thread_parent_path on posts (thread, parent, path);
 create index index_posts_path1_path on posts ((path[1]), path);
 
 create index index_post_thread_created_id on posts (thread, created, id);
@@ -119,7 +120,7 @@ CREATE UNLOGGED TABLE votes
     UNIQUE (thread, nickname)
 );
 
-create index index_votes_user_thread on votes (nickname, thread);
+create unique index index_votes_user_thread on votes (nickname, thread);
 
 /*---------------------------------------------------------------------------------------*/
 
