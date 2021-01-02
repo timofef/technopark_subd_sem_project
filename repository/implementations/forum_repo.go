@@ -33,6 +33,11 @@ func (f *ForumRepo) CreateForum(forum *models.Forum) (*models.Forum, error) {
 		}
 	}()
 
+	checkUser := tx.QueryRow("check_user_by_nickname", forum.User)
+	if err = checkUser.Scan(&forum.User); err != nil {
+		return nil, models.UserNotExists
+	}
+
 	result, err := tx.Exec("insert_forum", forum.Slug, forum.Title, forum.User)
 	if err != nil {
 		return nil, err
@@ -81,7 +86,7 @@ func (f *ForumRepo) GetDetailsBySlug(slug *string) (*models.Forum, error) {
 	return &forum, nil
 }
 
-func (f *ForumRepo) GetThreads(slug string, since, desc, limit []byte) (*models.Threads, error) {
+func (f *ForumRepo) GetThreads(slug *string, since, desc, limit []byte) (*models.Threads, error) {
 	tx, err := f.db.Begin()
 	defer func() {
 		if err == nil {
@@ -90,6 +95,11 @@ func (f *ForumRepo) GetThreads(slug string, since, desc, limit []byte) (*models.
 			_ = tx.Rollback()
 		}
 	}()
+
+	checkForum := tx.QueryRow("check_forum_by_slug", slug)
+	if err = checkForum.Scan(slug); err != nil {
+		return nil, models.ForumNotExists
+	}
 
 	var rows *pgx.Rows
 
@@ -136,7 +146,7 @@ func (f *ForumRepo) GetThreads(slug string, since, desc, limit []byte) (*models.
 	return &threads, nil
 }
 
-func (f *ForumRepo) GetUsersBySlug(slug string, since, desc, limit []byte) (*models.Users, error) {
+func (f *ForumRepo) GetUsersBySlug(slug *string, since, desc, limit []byte) (*models.Users, error) {
 	tx, err := f.db.Begin()
 	defer func() {
 		if err == nil {
@@ -145,6 +155,11 @@ func (f *ForumRepo) GetUsersBySlug(slug string, since, desc, limit []byte) (*mod
 			_ = tx.Rollback()
 		}
 	}()
+
+	checkForum := tx.QueryRow("check_forum_by_slug", slug)
+	if err = checkForum.Scan(slug); err != nil {
+		return nil, models.ForumNotExists
+	}
 
 	var rows *pgx.Rows
 
@@ -194,6 +209,15 @@ func (f *ForumRepo) PrepareStatements() error {
 
 	_, err = f.db.Prepare("get_forum_by_slug",
 		"SELECT forums.title, forums.owner, forums.slug, forums.posts, forums.threads "+
+			"FROM forums "+
+			"WHERE slug = $1 ",
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.db.Prepare("check_forum_by_slug",
+		"SELECT forums.slug "+
 			"FROM forums "+
 			"WHERE slug = $1 ",
 	)

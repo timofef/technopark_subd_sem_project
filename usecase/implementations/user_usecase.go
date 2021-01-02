@@ -27,9 +27,9 @@ func (uu * UserUsecase) GetUser(nickname *string) (*models.User, error) {
 }
 
 func (uu * UserUsecase) UpdateUser(newInfo *models.UserUpdate, nickname *string) (*models.User, error) {
-	if _, err := uu.userRepo.GetUserByNickname(nickname); err != nil {
+	/*if _, err := uu.userRepo.GetUserByNickname(nickname); err != nil {
 		return &models.User{}, models.UserNotExists
-	}
+	}*/
 
 	user, err := uu.userRepo.UpdateUserByNickname(newInfo, nickname)
 

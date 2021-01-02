@@ -24,11 +24,7 @@ func NewPostRepo(pool *pgx.ConnPool) interfaces.PostRepository {
 	return new
 }
 
-func (p *PostRepo) CreatePosts(posts *models.Posts, thread *models.Thread) (*models.Posts, error) {
-	if len(*posts) == 0 {
-		return &models.Posts{}, nil
-	}
-
+func (p *PostRepo) CreatePosts(slugOrId *interface{}, posts *models.Posts) (*models.Posts, error) {
 	tx, err := p.db.Begin()
 	defer func() {
 		if err == nil {
@@ -37,6 +33,15 @@ func (p *PostRepo) CreatePosts(posts *models.Posts, thread *models.Thread) (*mod
 			_ = tx.Rollback()
 		}
 	}()
+
+	thread, err := CheckThreadBySlugOrId(tx, slugOrId)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(*posts) == 0 {
+		return &models.Posts{}, nil
+	}
 
 	creationTime := strfmt.DateTime(time.Now())
 	for _, post := range *posts {

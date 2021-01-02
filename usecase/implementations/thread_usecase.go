@@ -25,69 +25,57 @@ func NewThreadUsecase(threadR repository.ThreadRepository,
 }
 
 func (u *ThreadUsecase) CreatePosts(slugOrId *interface{}, posts *models.Posts) (*models.Posts, error) {
-	thread, err := u.threadRepo.GetThreadBySlugOrId(slugOrId)
+	/*thread, err := u.threadRepo.GetThreadBySlugOrId(slugOrId)
 	if err != nil {
 		return nil, err
-	}
+	}*/
 
-	newPosts, err := u.postRepo.CreatePosts(posts, thread)
+	newPosts, err := u.postRepo.CreatePosts(slugOrId, posts)
 
 	return newPosts, err
 }
 
 func (u *ThreadUsecase) GetThread(slugOrId *interface{}) (*models.Thread, error) {
 	thread, err := u.threadRepo.GetThreadBySlugOrId(slugOrId)
-	if err != nil {
+/*	if err != nil {
 		return nil, err
-	}
+	}*/
 
-	return thread, nil
+	return thread, err
 }
 
 func (u *ThreadUsecase) UpdateThread(slug_or_id *interface{}, threadUpdate *models.ThreadUpdate) (*models.Thread, error) {
-	thread, err := u.threadRepo.GetThreadBySlugOrId(slug_or_id)
+	/*thread, err := u.threadRepo.GetThreadBySlugOrId(slug_or_id)
 	if err != nil {
 		return nil, err
-	}
+	}*/
 
-	err = u.threadRepo.UpdateThreadById(thread.ID, threadUpdate)
-	if err != nil {
+	thread, err := u.threadRepo.UpdateThreadById(slug_or_id, threadUpdate)
+	/*if err != nil {
 		return &models.Thread{}, err
-	}
+	}*/
 
-	if threadUpdate.Message != "" {
-		thread.Message = threadUpdate.Message
-	}
-	if threadUpdate.Title != "" {
-		thread.Title = threadUpdate.Title
-	}
-
-	return thread, nil
+	return thread, err
 }
 
 func (u *ThreadUsecase) GetPosts(slugOrId *interface{}, limit, since, sort, desc []byte) (*models.Posts, error) {
-	thread, err := u.threadRepo.GetThreadBySlugOrId(slugOrId)
-	if err != nil {
-		return nil, err
-	}
+	posts, err := u.threadRepo.GetThreadPosts(slugOrId, limit, since, sort, desc)
 
-	posts, err := u.threadRepo.GetThreadPosts(thread, limit, since, sort, desc)
-
-	return posts, nil
+	return posts, err
 }
 
 func (u *ThreadUsecase) VoteForThread(slugOrId *interface{}, voice *models.Vote) (*models.Thread, error) {
-	existingThread, err := u.threadRepo.GetThreadBySlugOrId(slugOrId)
+	/*existingThread, err := u.threadRepo.GetThreadBySlugOrId(slugOrId)
 	if err != nil {
 		return nil, models.ThreadNotExists
-	}
+	}*/
 
-	_, err = u.userRepo.GetUserByNickname(&voice.Nickname)
+	/*_, err = u.userRepo.GetUserByNickname(&voice.Nickname)
 	if err != nil {
 		return nil, models.UserNotExists
-	}
+	}*/
 
-	thread, err := u.threadRepo.VoteForThread(existingThread, voice)
+	thread, err := u.threadRepo.VoteForThread(slugOrId, voice)
 
 	return thread, err
 }

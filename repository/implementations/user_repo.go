@@ -88,6 +88,11 @@ func (u *UserRepo) UpdateUserByNickname(newInfo *models.UserUpdate, nickname *st
 		}
 	}()
 
+	checkUser := tx.QueryRow("check_user_by_nickname", nickname)
+	if err = checkUser.Scan(&nickname); err != nil {
+		return nil, models.UserNotExists
+	}
+
 	if newInfo.Email != "" {
 		existingUser := models.User{}
 		if err := tx.QueryRow("get_user_by_email", &newInfo.Email).
@@ -104,7 +109,7 @@ func (u *UserRepo) UpdateUserByNickname(newInfo *models.UserUpdate, nickname *st
 		nickname,
 		sql.NullString{String: newInfo.About, Valid: newInfo.About != ""}).
 		Scan(&user.Email, &user.Fullname, &user.Nickname, &user.About); err != nil {
-		fmt.Println(err)
+		//fmt.Println(err)
 		return nil, err
 	}
 
@@ -147,6 +152,16 @@ func (u *UserRepo) PrepareStatements() error {
 		"SELECT users.email, users.fullname, users.nickname, users.about "+
 			"FROM users "+
 			"WHERE email = $1",
+	)
+	if err != nil {
+		return err
+	}
+
+	// CHECK USER BY NICKNAME
+	_, err = u.db.Prepare("check_user_by_nickname",
+		"SELECT users.nickname "+
+			"FROM users "+
+			"WHERE nickname = $1",
 	)
 	if err != nil {
 		return err

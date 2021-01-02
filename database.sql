@@ -34,8 +34,8 @@ CREATE UNLOGGED TABLE users
     email    CITEXT UNIQUE             NOT NULL
 );
 
-CREATE INDEX index_users ON users (nickname, fullname, email, about);
-CLUSTER users USING index_users;
+CREATE INDEX index_users_nickname_hash ON users using hash (nickname);
+CREATE INDEX index_users_email_hash ON users using hash (email);
 
 /*---------------------------------------------------------------------------------------*/
 
@@ -71,13 +71,11 @@ CREATE UNLOGGED TABLE threads
     FOREIGN KEY (author) REFERENCES users (nickname) ON DELETE CASCADE
 );
 
-create index index_threads on threads (slug, title, message, created, author, forum, votes);
+create index index_threads_forum_created on threads (forum, created);
+create index index_threads_created on threads (created);
 
 create index index_threads_slug_hash on threads using hash (slug);
 create index index_threads_id_hash on threads using hash (id);
-
-create index index_threads_forums_foreign on threads (forum);
-create index index_threads_users_foreign on threads (author);
 
 /*---------------------------------------------------------------------------------------*/
 
@@ -97,16 +95,12 @@ CREATE UNLOGGED TABLE posts
     FOREIGN KEY (thread) REFERENCES threads (id) ON DELETE CASCADE
 );
 
+create index index_posts_id on posts (id);
+create index index_posts_thread_created_id on posts (thread, created, id);
 create index index_posts_thread_id on posts (thread, id);
 create index index_posts_thread_path on posts (thread, path);
 create index index_posts_thread_parent_path on posts (thread, parent, path);
 create index index_posts_path1_path on posts ((path[1]), path);
-
-create index index_post_thread_created_id on posts (thread, created, id);
-
-create index index_posts_forums_foreign on posts (forum);
-create index index_posts_users_foreign on posts (author);
-create index index_posts_threads_foreign on posts (thread);
 
 /*---------------------------------------------------------------------------------------*/
 
@@ -120,7 +114,7 @@ CREATE UNLOGGED TABLE votes
     UNIQUE (thread, nickname)
 );
 
-create unique index index_votes_user_thread on votes (nickname, thread);
+create unique index index_votes_user_thread on votes (thread, nickname);
 
 /*---------------------------------------------------------------------------------------*/
 
@@ -134,6 +128,7 @@ CREATE UNLOGGED TABLE forum_users
 );
 
 create index index_forum_users on forum_users (forum, nickname);
+create index index_forum_users_nickname on forum_users (nickname);
 cluster forum_users using index_forum_users;
 
 /*---------------------------------------------------------------------------------------*/
@@ -154,9 +149,11 @@ CREATE OR REPLACE FUNCTION insert_thread_votes()
 $insert_thread_votes$
 BEGIN
     IF new.voice > 0 THEN
-        UPDATE threads SET votes = (votes + 1) WHERE id = new.thread;
+        UPDATE threads SET votes = (votes + 1)
+        WHERE id = new.thread;
     ELSE
-        UPDATE threads SET votes = (votes - 1) WHERE id = new.thread;
+        UPDATE threads SET votes = (votes - 1)
+        WHERE id = new.thread;
     END IF;
     RETURN new;
 END;

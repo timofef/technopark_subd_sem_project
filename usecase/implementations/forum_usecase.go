@@ -17,18 +17,19 @@ func NewForumUsecase(forumR repository.ForumRepository, userR repository.UserRep
 }
 
 func (fu *ForumUsecase) CreateForum(forum *models.Forum) (*models.Forum, error) {
-	user, err := fu.userRepo.GetUserByNickname(&forum.User)
+	/*user, err := fu.userRepo.GetUserByNickname(&forum.User)
 	if err != nil {
 		return nil, models.UserNotExists
 	}
-	forum.User = user.Nickname
+	forum.User = user.Nickname*/
+
 	newForum, err := fu.forumRepo.CreateForum(forum)
 
 	return newForum, err
 }
 
 func (fu *ForumUsecase) CreateThread(thread *models.Thread) (*models.Thread, error) {
-	author, err := fu.userRepo.GetUserByNickname(&thread.Author)
+	/*author, err := fu.userRepo.GetUserByNickname(&thread.Author)
 	if err != nil {
 		return nil, models.UserNotExists
 	}
@@ -38,19 +39,19 @@ func (fu *ForumUsecase) CreateThread(thread *models.Thread) (*models.Thread, err
 	if err != nil {
 		return nil, models.ForumNotExists
 	}
-	thread.Forum = forum.Slug
+	thread.Forum = forum.Slug*/
 
 	newThread, err := fu.threadRepo.CreateThread(thread)
 	if err == nil {
 		return newThread, nil
+	} else if err != models.ForumNotExists {
+		existingThread, err := fu.threadRepo.GetThreadBySlug(thread.Slug)
+		if err == nil {
+			return existingThread, models.ThreadExists
+		}
 	}
 
-	existingThread, err := fu.threadRepo.GetThreadBySlug(thread.Slug)
-	if err == nil {
-		return existingThread, models.ThreadExists
-	}
-
-	return nil, nil
+	return newThread, err
 }
 
 func (fu *ForumUsecase) GetForumDetails(slug *string) (*models.Forum, error) {
@@ -60,29 +61,29 @@ func (fu *ForumUsecase) GetForumDetails(slug *string) (*models.Forum, error) {
 }
 
 func (fu *ForumUsecase) GetForumThreads(slug *string, since, desc, limit []byte) (*models.Threads, error) {
-	forum, err := fu.forumRepo.GetDetailsBySlug(slug)
+	/*forum, err := fu.forumRepo.GetDetailsBySlug(slug)
 	if err != nil {
 		return nil, models.ForumNotExists
-	}
+	}*/
 
-	threads, err := fu.forumRepo.GetThreads(forum.Slug, since, desc, limit)
-	if err != nil {
+	threads, err := fu.forumRepo.GetThreads(slug, since, desc, limit)
+	/*if err != nil {
 		return nil, err
-	}
+	}*/
 
-	return threads, nil
+	return threads, err
 }
 
 func (fu *ForumUsecase) GetForumUsers(slug *string, since, desc, limit []byte) (*models.Users, error) {
-	forum, err := fu.forumRepo.GetDetailsBySlug(slug)
+	/*forum, err := fu.forumRepo.GetDetailsBySlug(slug)
 	if err != nil {
 		return nil, models.ForumNotExists
-	}
+	}*/
 
-	users, err := fu.forumRepo.GetUsersBySlug(forum.Slug, since, desc, limit)
-	if err != nil {
+	users, err := fu.forumRepo.GetUsersBySlug(slug, since, desc, limit)
+	/*if err != nil {
 		return nil, err
-	}
+	}*/
 
-	return users, nil
+	return users, err
 }

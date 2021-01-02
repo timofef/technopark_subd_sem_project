@@ -34,6 +34,16 @@ func (t *ThreadRepo) CreateThread(thread *models.Thread) (*models.Thread, error)
 		}
 	}()
 
+	checkUser := tx.QueryRow("check_user_by_nickname", thread.Author)
+	if err = checkUser.Scan(&thread.Author); err != nil {
+		return nil, models.ForumNotExists
+	}
+
+	checkForum := tx.QueryRow("check_forum_by_slug", thread.Forum)
+	if err = checkForum.Scan(&thread.Forum); err != nil {
+		return nil, models.ForumNotExists
+	}
+
 	row := tx.QueryRow("insert_thread",
 		thread.Author,
 		thread.Forum,
@@ -73,7 +83,6 @@ func (t *ThreadRepo) GetThreadBySlug(slug string) (*models.Thread, error) {
 		&thread.Title,
 		&thread.Votes,
 	)
-
 	if err != nil {
 		return nil, models.ThreadNotExists
 	}
@@ -163,7 +172,25 @@ func (t *ThreadRepo) GetThreadBySlugOrId(slugOrId *interface{}) (*models.Thread,
 	return &thread, nil
 }
 
-func (t *ThreadRepo) VoteForThread(thread *models.Thread, voice *models.Vote) (*models.Thread, error) {
+func CheckThreadBySlugOrId(tx *pgx.Tx, slugOrId *interface{}) (*models.Thread, error) {
+	thread := models.Thread{}
+	id, err := strconv.Atoi((*slugOrId).(string))
+	if err != nil {
+		if err = tx.QueryRow("check_thread_by_slug", slugOrId).
+			Scan(&thread.ID, &thread.Forum); err != nil {
+			return nil, models.ThreadNotExists
+		}
+	} else {
+		if err = tx.QueryRow("check_thread_by_id", id).
+			Scan(&thread.ID, &thread.Forum); err != nil {
+			return nil, models.ThreadNotExists
+		}
+	}
+
+	return &thread, nil
+}
+
+func (t *ThreadRepo) VoteForThread(slugOrId *interface{}, voice *models.Vote) (*models.Thread, error) {
 	tx, err := t.db.Begin()
 	defer func() {
 		if err == nil {
@@ -172,6 +199,37 @@ func (t *ThreadRepo) VoteForThread(thread *models.Thread, voice *models.Vote) (*
 			_ = tx.Rollback()
 		}
 	}()
+
+	thread, err := CheckThreadBySlugOrId(tx, slugOrId)
+	if err != nil {
+		return nil, err
+	}
+
+	checkUser := tx.QueryRow("check_user_by_nickname", voice.Nickname)
+	if err = checkUser.Scan(&voice.Nickname); err != nil {
+		return nil, models.UserNotExists
+	}
+
+	rows := tx.QueryRow("get_thread_by_id", thread.ID)
+
+	slug := sql.NullString{}
+	err = rows.Scan(&thread.ID,
+		&thread.Author,
+		&thread.Created,
+		&thread.Forum,
+		&thread.Message,
+		&slug,
+		&thread.Title,
+		&thread.Votes,
+	)
+	if slug.Valid {
+		thread.Slug = slug.String
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		return nil, models.ThreadNotExists
+	}
 
 	var alreadyVoted int32 = 0
 
@@ -200,80 +258,31 @@ func (t *ThreadRepo) VoteForThread(thread *models.Thread, voice *models.Vote) (*
 		}
 	}
 
-	/*if err == nil && alreadyVoted == voice.Voice {
-		return thread, models.SameVote
-	} else {
-		_, err = tx.Exec("insert_vote",
-			voice.Voice,
-			voice.Nickname,
-			thread.ID,
-		)
-		if err != nil {
-			_, err = tx.Exec("update_vote",
-				voice.Voice,
-				voice.Nickname,
-				thread.ID,
-			)
-			fmt.Println("vote   ", err)
-			thread.Votes += 2 * voice.Voice
-		} else {
-			thread.Votes += voice.Voice
-		}
-	}*/
-
-	/*if alreadyVoted != 0 {
-		if alreadyVoted == voice.Voice {
-			return thread, models.SameVote
-		} else {
-			_, err = tx.Exec("update_vote",
-				voice.Voice,
-				voice.Nickname,
-				thread.ID,
-			)
-			thread.Votes += 2 * voice.Voice
-		}
-	} else {
-		_, err = tx.Exec("insert_vote",
-			voice.Voice,
-			voice.Nickname,
-			thread.ID,
-		)
-		thread.Votes += voice.Voice
-	}*/
-
 	return thread, nil
 }
 
-func (t *ThreadRepo) GetThreadPostsFlat(thread *models.Thread, limit, since, desc []byte) (*models.Posts, error) {
-	tx, err := t.db.Begin()
-	defer func() {
-		if err == nil {
-			_ = tx.Commit()
-		} else {
-			_ = tx.Rollback()
-		}
-	}()
-
+func (t *ThreadRepo) GetThreadPostsFlat(tx *pgx.Tx, thread int32, limit, since, desc []byte) (*models.Posts, error) {
 	trueBytes := []byte("true")
 	var rows *pgx.Rows
+	var err error
 
 	switch true {
 	case since == nil && limit == nil && !bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_flat", thread.ID)
+		rows, err = tx.Query("get_posts_flat", thread)
 	case since == nil && limit == nil && bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_flat_desc", thread.ID)
+		rows, err = tx.Query("get_posts_flat_desc", thread)
 	case since == nil && limit != nil && !bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_flat_limit", thread.ID, limit)
+		rows, err = tx.Query("get_posts_flat_limit", thread, limit)
 	case since == nil && limit != nil && bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_flat_limit_desc", thread.ID, limit)
+		rows, err = tx.Query("get_posts_flat_limit_desc", thread, limit)
 	case since != nil && limit == nil && !bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_flat_since", thread.ID, since)
+		rows, err = tx.Query("get_posts_flat_since", thread, since)
 	case since != nil && limit == nil && bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_flat_since_desc", thread.ID, since)
+		rows, err = tx.Query("get_posts_flat_since_desc", thread, since)
 	case since != nil && limit != nil && !bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_flat_since_limit", thread.ID, since, limit)
+		rows, err = tx.Query("get_posts_flat_since_limit", thread, since, limit)
 	case since != nil && limit != nil && bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_flat_since_limit_desc", thread.ID, since, limit)
+		rows, err = tx.Query("get_posts_flat_since_limit_desc", thread, since, limit)
 	}
 
 	if err != nil {
@@ -305,36 +314,28 @@ func (t *ThreadRepo) GetThreadPostsFlat(thread *models.Thread, limit, since, des
 	return &posts, nil
 }
 
-func (t *ThreadRepo) GetThreadPostsTree(thread *models.Thread, limit, since, desc []byte) (*models.Posts, error) {
-	tx, err := t.db.Begin()
-	defer func() {
-		if err == nil {
-			_ = tx.Commit()
-		} else {
-			_ = tx.Rollback()
-		}
-	}()
-
+func (t *ThreadRepo) GetThreadPostsTree(tx *pgx.Tx, thread int32, limit, since, desc []byte) (*models.Posts, error) {
 	trueBytes := []byte("true")
 	var rows *pgx.Rows
+	var err error
 
 	switch true {
 	case since == nil && limit == nil && !bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_tree", thread.ID)
+		rows, err = tx.Query("get_posts_tree", thread)
 	case since == nil && limit == nil && bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_tree_desc", thread.ID)
+		rows, err = tx.Query("get_posts_tree_desc", thread)
 	case since == nil && limit != nil && !bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_tree_limit", thread.ID, limit)
+		rows, err = tx.Query("get_posts_tree_limit", thread, limit)
 	case since == nil && limit != nil && bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_tree_limit_desc", thread.ID, limit)
+		rows, err = tx.Query("get_posts_tree_limit_desc", thread, limit)
 	case since != nil && limit == nil && !bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_tree_since", thread.ID, since)
+		rows, err = tx.Query("get_posts_tree_since", thread, since)
 	case since != nil && limit == nil && bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_tree_since_desc", thread.ID, since)
+		rows, err = tx.Query("get_posts_tree_since_desc", thread, since)
 	case since != nil && limit != nil && !bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_tree_since_limit", thread.ID, since, limit)
+		rows, err = tx.Query("get_posts_tree_since_limit", thread, since, limit)
 	case since != nil && limit != nil && bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_tree_since_limit_desc", thread.ID, since, limit)
+		rows, err = tx.Query("get_posts_tree_since_limit_desc", thread, since, limit)
 	}
 
 	if err != nil {
@@ -366,36 +367,28 @@ func (t *ThreadRepo) GetThreadPostsTree(thread *models.Thread, limit, since, des
 	return &posts, nil
 }
 
-func (t *ThreadRepo) GetThreadPostsParentTree(thread *models.Thread, limit, since, desc []byte) (*models.Posts, error) {
-	tx, err := t.db.Begin()
-	defer func() {
-		if err == nil {
-			_ = tx.Commit()
-		} else {
-			_ = tx.Rollback()
-		}
-	}()
-
+func (t *ThreadRepo) GetThreadPostsParentTree(tx *pgx.Tx, thread int32, limit, since, desc []byte) (*models.Posts, error) {
 	trueBytes := []byte("true")
 	var rows *pgx.Rows
+	var err error
 
 	switch true {
 	case since == nil && limit == nil && !bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_parenttree", thread.ID)
+		rows, err = tx.Query("get_posts_parenttree", thread)
 	case since == nil && limit == nil && bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_parenttree_desc", thread.ID)
+		rows, err = tx.Query("get_posts_parenttree_desc", thread)
 	case since == nil && limit != nil && !bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_parenttree_limit", thread.ID, limit)
+		rows, err = tx.Query("get_posts_parenttree_limit", thread, limit)
 	case since == nil && limit != nil && bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_parenttree_limit_desc", thread.ID, limit)
+		rows, err = tx.Query("get_posts_parenttree_limit_desc", thread, limit)
 	case since != nil && limit == nil && !bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_parenttree_since", thread.ID, since)
+		rows, err = tx.Query("get_posts_parenttree_since", thread, since)
 	case since != nil && limit == nil && bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_parenttree_since_desc", thread.ID, since)
+		rows, err = tx.Query("get_posts_parenttree_since_desc", thread, since)
 	case since != nil && limit != nil && !bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_parenttree_since_limit", thread.ID, since, limit)
+		rows, err = tx.Query("get_posts_parenttree_since_limit", thread, since, limit)
 	case since != nil && limit != nil && bytes.Equal(desc, trueBytes):
-		rows, err = tx.Query("get_posts_parenttree_since_limit_desc", thread.ID, since, limit)
+		rows, err = tx.Query("get_posts_parenttree_since_limit_desc", thread, since, limit)
 	}
 
 	if err != nil {
@@ -427,21 +420,7 @@ func (t *ThreadRepo) GetThreadPostsParentTree(thread *models.Thread, limit, sinc
 	return &posts, nil
 }
 
-func (t *ThreadRepo) GetThreadPosts(thread *models.Thread, limit, since, sort, desc []byte) (*models.Posts, error) {
-	switch true {
-	case bytes.Equal([]byte("tree"), sort):
-		posts, err := t.GetThreadPostsTree(thread, limit, since, desc)
-		return posts, err
-	case bytes.Equal([]byte("parent_tree"), sort):
-		posts, err := t.GetThreadPostsParentTree(thread, limit, since, desc)
-		return posts, err
-	default:
-		posts, err := t.GetThreadPostsFlat(thread, limit, since, desc)
-		return posts, err
-	}
-}
-
-func (t *ThreadRepo) UpdateThreadById(id int32, threadUpdate *models.ThreadUpdate) (error) {
+func (t *ThreadRepo) GetThreadPosts(slugOrId *interface{}, limit, since, sort, desc []byte) (*models.Posts, error) {
 	tx, err := t.db.Begin()
 	defer func() {
 		if err == nil {
@@ -451,16 +430,64 @@ func (t *ThreadRepo) UpdateThreadById(id int32, threadUpdate *models.ThreadUpdat
 		}
 	}()
 
-	if _, err := tx.Exec("update_thread",
-		sql.NullString{String: threadUpdate.Message, Valid: threadUpdate.Message != ""},
-		sql.NullString{String: threadUpdate.Title, Valid: threadUpdate.Title != ""},
-		id);
-		err != nil {
-		//fmt.Println(err)
-		return err
+	thread, err := CheckThreadBySlugOrId(tx, slugOrId)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	switch true {
+	case bytes.Equal([]byte("tree"), sort):
+		posts, err := t.GetThreadPostsTree(tx, thread.ID, limit, since, desc)
+		return posts, err
+	case bytes.Equal([]byte("parent_tree"), sort):
+		posts, err := t.GetThreadPostsParentTree(tx, thread.ID, limit, since, desc)
+		return posts, err
+	default:
+		posts, err := t.GetThreadPostsFlat(tx, thread.ID, limit, since, desc)
+		return posts, err
+	}
+}
+
+func (t *ThreadRepo) UpdateThreadById(slugOrId *interface{}, threadUpdate *models.ThreadUpdate) (*models.Thread, error) {
+	tx, err := t.db.Begin()
+	defer func() {
+		if err == nil {
+			_ = tx.Commit()
+		} else {
+			_ = tx.Rollback()
+		}
+	}()
+
+	thread, err := CheckThreadBySlugOrId(tx, slugOrId)
+	if err != nil {
+		return nil, err
+	}
+
+	rows := tx.QueryRow("update_thread",
+		sql.NullString{String: threadUpdate.Message, Valid: threadUpdate.Message != ""},
+		sql.NullString{String: threadUpdate.Title, Valid: threadUpdate.Title != ""},
+		thread.ID)
+
+	if err = rows.Scan(&thread.ID,
+		&thread.Author,
+		&thread.Created,
+		&thread.Forum,
+		&thread.Message,
+		&thread.Slug,
+		&thread.Title,
+		&thread.Votes,
+	); err != nil {
+		return nil, models.ThreadNotExists
+	}
+
+	if threadUpdate.Message != "" {
+		thread.Message = threadUpdate.Message
+	}
+	if threadUpdate.Title != "" {
+		thread.Title = threadUpdate.Title
+	}
+
+	return thread, nil
 }
 
 func (t *ThreadRepo) PrepareStatements() error {
@@ -494,13 +521,13 @@ func (t *ThreadRepo) PrepareStatements() error {
 	}
 
 	_, err = t.db.Prepare("check_thread_by_slug",
-		"SELECT id, forum, slug FROM threads WHERE slug = $1")
+		"SELECT id, forum FROM threads WHERE slug = $1")
 	if err != nil {
 		return err
 	}
 
 	_, err = t.db.Prepare("check_thread_by_id",
-		"SELECT id, forum, slug FROM threads WHERE id = $1")
+		"SELECT id, forum FROM threads WHERE id = $1")
 	if err != nil {
 		return err
 	}
@@ -532,7 +559,8 @@ func (t *ThreadRepo) PrepareStatements() error {
 		"UPDATE threads SET "+
 			"message = COALESCE($1, threads.message), "+
 			"title = COALESCE($2, threads.title) "+
-			"WHERE id = $3 ",
+			"WHERE id = $3 RETURNING threads.id, threads.author, threads.created, threads.forum, "+
+			"threads.message, threads.slug, threads.title, threads.votes",
 	)
 	if err != nil {
 		return err

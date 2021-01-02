@@ -28,10 +28,10 @@ func (s *ServiceRepo) GetStatus() (*models.Status, error) {
 
 	status := models.Status{}
 	tx.QueryRow("SELECT " +
-		"(SELECT count(*) FROM forums) as forums, "+
-		"(SELECT count(*) FROM posts) as posts, "+
-		"(SELECT count(*) FROM users) as users, "+
-		"(SELECT count(*) FROM threads) as threads").
+		"(SELECT count(id) FROM forums) as forums, "+
+		"(SELECT count(id) FROM posts) as posts, "+
+		"(SELECT count(id) FROM users) as users, "+
+		"(SELECT count(id) FROM threads) as threads").
 		Scan(&status.Forum,
 			&status.Post,
 			&status.User,
