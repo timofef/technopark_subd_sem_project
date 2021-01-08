@@ -43,29 +43,35 @@ func (p *PostRepo) CreatePosts(slugOrId *interface{}, posts *models.Posts) (*mod
 		return &models.Posts{}, nil
 	}
 
+	batch := tx.BeginBatch()
 	creationTime := strfmt.DateTime(time.Now())
+	for _, post := range *posts {
+		batch.Queue("insert_post", []interface{}{
+			post.Author,
+			creationTime,
+			thread.Forum,
+			post.Message,
+			post.Parent,
+			thread.ID,
+		}, nil, nil)
+	}
+
+	err = batch.Send(context.Background(), nil)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, post := range *posts {
 		post.Thread = thread.ID
 		post.Forum = thread.Forum
 		post.Created = creationTime
-
-		err = tx.QueryRow("insert_post",
-			post.Author,
-			creationTime,
-			post.Forum,
-			post.Message,
-			post.Parent,
-			post.Thread,
-		).Scan(&post.ID)
-
+		err = batch.QueryRowResults().Scan(&post.ID)
 		if err != nil {
-			//fmt.Println(err)
 			if err.Error() == "ERROR: 00404 (SQLSTATE 00404)" {
 				return nil, models.ParentNotExists
 			} else {
 				return nil, models.ThreadNotExists
 			}
-
 		}
 	}
 
