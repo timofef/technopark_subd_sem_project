@@ -20,7 +20,7 @@ func (s *ServiceUsecase) GetStatus() (*models.Status, error) {
 	return status, err
 }
 
-func (s *ServiceUsecase) Clear() (error) {
+func (s *ServiceUsecase) Clear() error {
 	err := s.serviceRepo.Clear()
 
 	return err

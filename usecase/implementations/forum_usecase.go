@@ -7,8 +7,8 @@ import (
 )
 
 type ForumUsecase struct {
-	forumRepo repository.ForumRepository
-	userRepo repository.UserRepository
+	forumRepo  repository.ForumRepository
+	userRepo   repository.UserRepository
 	threadRepo repository.ThreadRepository
 }
 
@@ -17,30 +17,12 @@ func NewForumUsecase(forumR repository.ForumRepository, userR repository.UserRep
 }
 
 func (fu *ForumUsecase) CreateForum(forum *models.Forum) (*models.Forum, error) {
-	/*user, err := fu.userRepo.GetUserByNickname(&forum.User)
-	if err != nil {
-		return nil, models.UserNotExists
-	}
-	forum.User = user.Nickname*/
-
 	newForum, err := fu.forumRepo.CreateForum(forum)
 
 	return newForum, err
 }
 
 func (fu *ForumUsecase) CreateThread(thread *models.Thread) (*models.Thread, error) {
-	/*author, err := fu.userRepo.GetUserByNickname(&thread.Author)
-	if err != nil {
-		return nil, models.UserNotExists
-	}
-	thread.Author = author.Nickname
-
-	forum, err := fu.forumRepo.GetDetailsBySlug(&thread.Forum)
-	if err != nil {
-		return nil, models.ForumNotExists
-	}
-	thread.Forum = forum.Slug*/
-
 	newThread, err := fu.threadRepo.CreateThread(thread)
 	if err == nil {
 		return newThread, nil
@@ -61,29 +43,19 @@ func (fu *ForumUsecase) GetForumDetails(slug *string) (*models.Forum, error) {
 }
 
 func (fu *ForumUsecase) GetForumThreads(slug *string, since, desc, limit []byte) (*models.Threads, error) {
-	/*forum, err := fu.forumRepo.GetDetailsBySlug(slug)
-	if err != nil {
-		return nil, models.ForumNotExists
-	}*/
-
 	threads, err := fu.forumRepo.GetThreads(slug, since, desc, limit)
-	/*if err != nil {
+	if err != nil {
 		return nil, err
-	}*/
+	}
 
-	return threads, err
+	return threads, nil
 }
 
 func (fu *ForumUsecase) GetForumUsers(slug *string, since, desc, limit []byte) (*models.Users, error) {
-	/*forum, err := fu.forumRepo.GetDetailsBySlug(slug)
-	if err != nil {
-		return nil, models.ForumNotExists
-	}*/
-
 	users, err := fu.forumRepo.GetUsersBySlug(slug, since, desc, limit)
-	/*if err != nil {
+	if err != nil {
 		return nil, err
-	}*/
+	}
 
-	return users, err
+	return users, nil
 }
